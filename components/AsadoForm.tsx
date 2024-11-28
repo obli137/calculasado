@@ -40,8 +40,8 @@ export default function AsadoForm() {
   }, [formData]);
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white shadow-lg rounded-lg p-6">
-      <form>
+    <div className="w-full max-w-md mx-auto">
+      <form className="bg-white shadow-lg rounded-lg p-6 mb-4">
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="hombres">
             Cantidad de Hombres
@@ -103,7 +103,7 @@ export default function AsadoForm() {
       </form>
 
       {resultado && (
-        <div className="bg-gray-100 shadow-md rounded px-8 pt-6 pb-8 mt-4">
+        <div className="bg-white shadow-lg rounded-lg p-6 mb-4">
           <h2 className="text-xl font-bold mb-4">Resultados:</h2>
           <ul className="space-y-2">
             <li>Carne: {resultado.carne.toFixed(2)} kg</li>
@@ -112,6 +112,32 @@ export default function AsadoForm() {
           </ul>
         </div>
       )}
+
+      <div className="bg-white shadow-lg rounded-lg p-6 text-gray-700">
+        <p className="text-center mb-6 leading-relaxed">
+          Si te hicimos reír, te evitamos la típica sobremesa de "che, ¿y ahora qué hacemos con todo este asado que sobró?", 
+          o simplemente te salvamos de un asado al borde del caos, tiranos un hueso... o mejor, un cafecito. Con tu donación 
+          nos ayudás a seguir chamuyando algoritmos parrilleros, pagando el carbón digital y manteniendo viva esta gran 
+          misión nacional: que no falte nunca un chori en la parrilla. ¡Gracias, maestro asador! ☕🔥
+        </p>
+
+        <div className="flex justify-center">
+          <a 
+            href='https://cafecito.app/calculaasado' 
+            rel='noopener' 
+            target='_blank'
+            className="hover:opacity-90 transition-opacity"
+          >
+            <img 
+              srcSet='https://cdn.cafecito.app/imgs/buttons/button_4.png 1x, 
+                      https://cdn.cafecito.app/imgs/buttons/button_4_2x.png 2x, 
+                      https://cdn.cafecito.app/imgs/buttons/button_4_3.75x.png 3.75x' 
+              src='https://cdn.cafecito.app/imgs/buttons/button_4.png' 
+              alt='Invitame un café en cafecito.app'
+            />
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
