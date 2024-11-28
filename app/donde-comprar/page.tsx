@@ -18,10 +18,10 @@ const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["pla
 
 export default function DondeComprar() {
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
   const [carniceriasNearby, setCarniceriasNearby] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
 
   const searchNearbyCarniceries = useCallback((location: google.maps.LatLngLiteral) => {
     if (!map || !window.google) return;
@@ -46,30 +46,36 @@ export default function DondeComprar() {
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
     searchNearbyCarniceries(defaultCenter);
-  }, [searchNearbyCarniceries]);
 
-  const onLoadSearchBox = (ref: google.maps.places.SearchBox) => {
-    setSearchBox(ref);
-  };
+    // Inicializar SearchBox
+    const input = document.getElementById("pac-input") as HTMLInputElement;
+    if (input && window.google) {
+      const searchBox = new window.google.maps.places.SearchBox(input);
+      setSearchBox(searchBox);
+      
+      mapInstance.addListener("bounds_changed", () => {
+        searchBox.setBounds(mapInstance.getBounds() as google.maps.LatLngBounds);
+      });
 
-  const onPlacesChanged = () => {
-    if (searchBox && map) {
-      const places = searchBox.getPlaces();
-      if (places && places.length > 0) {
-        const place = places[0];
+      // Listener para cuando se selecciona un lugar
+      searchBox.addListener("places_changed", () => {
+        const places = searchBox.getPlaces();
+        if (places?.length === 0) return;
+
+        const place = places![0];
         if (place.geometry && place.geometry.location) {
           const location = {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng()
           };
           
-          map.setCenter(location);
-          map.setZoom(15);
+          mapInstance.setCenter(location);
+          mapInstance.setZoom(15);
           searchNearbyCarniceries(location);
         }
-      }
+      });
     }
-  };
+  }, [searchNearbyCarniceries]);
 
   const handleUpdateArea = () => {
     if (!map) return;
@@ -92,19 +98,12 @@ export default function DondeComprar() {
           libraries={libraries}
         >
           <div className="flex gap-4 mb-4">
-            <div className="flex-grow">
-              <StandaloneSearchBox
-                onLoad={onLoadSearchBox}
-                onPlacesChanged={onPlacesChanged}
-              >
-                <input
-                  type="text"
-                  placeholder="Busca tu dirección..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </StandaloneSearchBox>
-            </div>
-
+            <input
+              id="pac-input"
+              type="text"
+              placeholder="Busca tu dirección..."
+              className="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
             <button
               onClick={handleUpdateArea}
               disabled={isLoading}
