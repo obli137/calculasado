@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface AsadoCalculation {
   carne: number;
@@ -113,30 +114,29 @@ export default function AsadoForm() {
         </div>
       )}
 
-      <div className="bg-white shadow-lg rounded-lg p-6 text-gray-700">
-        <p className="text-center mb-6 leading-relaxed">
-          Si te hicimos reír, te evitamos la típica sobremesa de "che, ¿y ahora qué hacemos con todo este asado que sobró?", 
+      <div className="bg-white shadow-lg rounded-lg p-6 mb-8 text-gray-700 leading-relaxed">
+        <p className="text-center">
+          Si te hicimos reír, te evitamos la típica sobremesa de &quot;che, ¿y ahora qué hacemos con todo este asado que sobró?&quot;, 
           o simplemente te salvamos de un asado al borde del caos, tiranos un hueso... o mejor, un cafecito. Con tu donación 
           nos ayudás a seguir chamuyando algoritmos parrilleros, pagando el carbón digital y manteniendo viva esta gran 
           misión nacional: que no falte nunca un chori en la parrilla. ¡Gracias, maestro asador! ☕🔥
         </p>
+      </div>
 
-        <div className="flex justify-center">
-          <a 
-            href='https://cafecito.app/calculaasado' 
-            rel='noopener' 
-            target='_blank'
-            className="hover:opacity-90 transition-opacity"
-          >
-            <img 
-              srcSet='https://cdn.cafecito.app/imgs/buttons/button_4.png 1x, 
-                      https://cdn.cafecito.app/imgs/buttons/button_4_2x.png 2x, 
-                      https://cdn.cafecito.app/imgs/buttons/button_4_3.75x.png 3.75x' 
-              src='https://cdn.cafecito.app/imgs/buttons/button_4.png' 
-              alt='Invitame un café en cafecito.app'
-            />
-          </a>
-        </div>
+      <div className="flex justify-center">
+        <a 
+          href="https://cafecito.app/calculaasado" 
+          rel="noopener" 
+          target="_blank"
+          className="hover:opacity-90 transition-opacity"
+        >
+          <Image 
+            width={176}
+            height={62}
+            src="https://cdn.cafecito.app/imgs/buttons/button_4.png"
+            alt="Invitame un café en cafecito.app"
+          />
+        </a>
       </div>
     </div>
   );
