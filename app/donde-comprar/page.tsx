@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 
 const mapContainerStyle = {
   width: '100%',
@@ -57,7 +57,7 @@ export default function DondeComprar() {
         searchBox.setBounds(mapInstance.getBounds() as google.maps.LatLngBounds);
       });
 
-      // Listener para cuando se selecciona un lugar
+      // Listener para cuando se selecciona un lugar - Ahora con búsqueda automática
       searchBox.addListener("places_changed", () => {
         const places = searchBox.getPlaces();
         if (places?.length === 0) return;
@@ -71,6 +71,7 @@ export default function DondeComprar() {
           
           mapInstance.setCenter(location);
           mapInstance.setZoom(15);
+          // Búsqueda automática al seleccionar un lugar
           searchNearbyCarniceries(location);
         }
       });
