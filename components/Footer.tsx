@@ -1,16 +1,16 @@
 export default function Footer() {
   return (
-    <footer className="bg-white shadow-lg mt-12">
+    <footer className="bg-gray-900 shadow-lg mt-12">
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="text-center md:text-left mb-4 md:mb-0">
-            <p className="text-gray-600">
+            <p className="text-gray-200">
               © {new Date().getFullYear()} CalculaAsado - Todos los derechos reservados
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-gray-300 mt-1">
               Hecho con ❤️ y hambre en Argentina
             </p>
-            <p className="text-sm text-gray-500 mt-1 italic">
+            <p className="text-gray-300 mt-1 italic">
               Asociación sin fines de locro
             </p>
           </div>
@@ -20,7 +20,7 @@ export default function Footer() {
               href="https://www.instagram.com/calculasado" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-red-600 transition-colors"
+              className="text-gray-300 hover:text-red-400 transition-colors"
               aria-label="Seguinos en Instagram"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -31,7 +31,7 @@ export default function Footer() {
               href="https://x.com/Calculasado" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-600 hover:text-red-600 transition-colors"
+              className="text-gray-300 hover:text-red-400 transition-colors"
               aria-label="Seguinos en X"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">

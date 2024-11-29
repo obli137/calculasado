@@ -1,9 +1,11 @@
-import Image from 'next/image';
+
+
 
 
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
@@ -17,16 +19,23 @@ export default function Navbar() {
     <nav className="bg-white shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex justify-between h-16">
-          <div className="flex">
+          <div className="flex items-center">
             <Link 
               href="/" 
-              className="flex items-center px-2 py-2 text-lg font-bold text-red-600"
+              className="flex items-center space-x-2"
             >
-              CalculaAsado
+              <Image
+                src="/logo.png"
+                alt="CalculaAsado Logo"
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
+              <span className="text-lg font-bold text-red-600">CalculaAsado</span>
             </Link>
           </div>
 
-          <div className="flex space-x-8">
+          <div className="flex space-x-8 items-center">
             <Link 
               href="/" 
               className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${isActive('/')}`}
