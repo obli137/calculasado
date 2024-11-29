@@ -7,6 +7,7 @@ interface AsadoCalculation {
   carne: number;
   embutidos: number;
   pan: number;
+  achuras: number;
 }
 
 export default function AsadoForm() {
@@ -15,6 +16,7 @@ export default function AsadoForm() {
     cantidadMujeres: '',
     cantidadNinos: '',
     alPan: false,
+    porcentajeAchuras: 0,
   });
   const [resultado, setResultado] = useState<AsadoCalculation | null>(null);
 
@@ -32,26 +34,42 @@ export default function AsadoForm() {
     const totalPersonas = hombres + mujeres + ninos;
     const calculoPan = formData.alPan ? 0.25 : 0.1;
     const ajusteCarne = formData.alPan ? 0.7 : 1;
+    
+    if (formData.alPan) {
+      return {
+        carne: carneTotal * ajusteCarne,
+        embutidos: Math.ceil(totalPersonas / 2),
+        pan: totalPersonas * calculoPan,
+        achuras: 0
+      };
+    }
+
+    const porcentajeAchuras = formData.porcentajeAchuras / 100;
+    const cantidadAchuras = carneTotal * porcentajeAchuras * ajusteCarne;
+    const cantidadCarneFinal = carneTotal * (1 - porcentajeAchuras) * ajusteCarne;
 
     return {
-      carne: carneTotal * ajusteCarne,
+      carne: cantidadCarneFinal,
       embutidos: Math.ceil(totalPersonas / 2),
       pan: totalPersonas * calculoPan,
+      achuras: cantidadAchuras,
     };
   };
 
   useEffect(() => {
-    const totalPersonas = 
-      (parseInt(formData.cantidadHombres) || 0) +
-      (parseInt(formData.cantidadMujeres) || 0) +
-      (parseInt(formData.cantidadNinos) || 0);
+    const hombres = parseInt(formData.cantidadHombres) || 0;
+    const mujeres = parseInt(formData.cantidadMujeres) || 0;
+    const ninos = parseInt(formData.cantidadNinos) || 0;
+    
+    const totalPersonas = hombres + mujeres + ninos;
 
     if (totalPersonas > 0) {
-      setResultado(calcularAsado());
+      const resultado = calcularAsado();
+      setResultado(resultado);
     } else {
       setResultado(null);
     }
-  }, [formData]);
+  }, [formData.cantidadHombres, formData.cantidadMujeres, formData.cantidadNinos, formData.alPan, formData.porcentajeAchuras]);
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -111,19 +129,54 @@ export default function AsadoForm() {
           />
         </div>
 
-        <div className="mb-6 flex items-center">
+        <div className="mb-4 flex items-center">
           <span className="text-sm font-medium text-gray-700 mr-3">Al Plato</span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input 
               type="checkbox"
               checked={formData.alPan}
-              onChange={(e) => setFormData({...formData, alPan: e.target.checked})}
+              onChange={(e) => {
+                const isAlPan = e.target.checked;
+                setFormData({
+                  ...formData, 
+                  alPan: isAlPan,
+                  porcentajeAchuras: isAlPan ? 0 : formData.porcentajeAchuras
+                });
+              }}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
           </label>
           <span className="text-sm font-medium text-gray-700 ml-3">Al Pan</span>
         </div>
+
+        {!formData.alPan && (
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Achurómetro 🥩
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={formData.porcentajeAchuras}
+                onChange={(e) => {
+                  const valor = parseInt(e.target.value);
+                  setFormData(prev => ({...prev, porcentajeAchuras: valor}));
+                }}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
+              />
+              <span className="text-sm font-medium text-gray-700 min-w-[3rem] text-right">
+                {formData.porcentajeAchuras}%
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Porcentaje del total de carne que será achuras
+            </p>
+          </div>
+        )}
       </form>
 
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -157,6 +210,20 @@ export default function AsadoForm() {
                   </p>
                 </div>
               </div>
+
+              {!formData.alPan && (
+                <div className="flex items-center p-3 bg-purple-50 rounded-lg border border-purple-100">
+                  <div className="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-purple-600 text-xl">🫀</span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm text-purple-600 font-medium">Achuras</p>
+                    <p className="text-2xl font-bold text-purple-700">
+                      {resultado.achuras.toFixed(2)} kg
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center p-3 bg-orange-50 rounded-lg border border-orange-100">
                 <div className="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
