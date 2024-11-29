@@ -3,9 +3,13 @@ import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
-export const metadata = {
-  title: 'Calculadora de Asado',
-  description: 'Calcula las cantidades perfectas para tu asado',
+export const metadata: Metadata = {
+  title: 'CalculaAsado - Calculadora de Asado',
+  description: 'Calcula exactamente cuánta carne necesitas para tu asado. ¡No más sobras ni faltantes!',
+  icons: {
+    icon: [{ url: '/favicon.ico' }],
+    shortcut: [{ url: '/favicon.ico' }],
+  },
 };
 
 export default function RootLayout({
