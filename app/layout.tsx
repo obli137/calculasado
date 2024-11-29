@@ -6,10 +6,6 @@ import Footer from '../components/Footer';
 export const metadata: Metadata = {
   title: 'CalculaAsado - Calculadora de Asado',
   description: 'Calcula exactamente cuánta carne necesitas para tu asado. ¡No más sobras ni faltantes!',
-  icons: {
-    icon: [{ url: '/favicon.ico' }],
-    shortcut: [{ url: '/favicon.ico' }],
-  },
 };
 
 export default function RootLayout({
@@ -19,6 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
+      <head>
+        <link 
+          rel="icon" 
+          href="/favicon.ico" 
+          sizes="any"
+        />
+      </head>
       <body className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
         <main className="flex-grow">

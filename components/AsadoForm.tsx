@@ -18,7 +18,7 @@ export default function AsadoForm() {
   });
   const [resultado, setResultado] = useState<AsadoCalculation | null>(null);
 
-  useEffect(() => {
+  const calcularAsado = () => {
     const hombres = parseInt(formData.cantidadHombres) || 0;
     const mujeres = parseInt(formData.cantidadMujeres) || 0;
     const ninos = parseInt(formData.cantidadNinos) || 0;
@@ -30,19 +30,42 @@ export default function AsadoForm() {
     );
 
     const totalPersonas = hombres + mujeres + ninos;
-    const calculoPan = formData.alPan ? 0.3 : 0.2;  // 300g por persona si es "Al Pan", 200g si es "Al Plato"
+    const calculoPan = formData.alPan ? 0.25 : 0.1;
     const ajusteCarne = formData.alPan ? 0.7 : 1;
 
-    setResultado({
+    return {
       carne: carneTotal * ajusteCarne,
-      embutidos: totalPersonas, // 1 unidad por persona
+      embutidos: Math.ceil(totalPersonas / 2),
       pan: totalPersonas * calculoPan,
-    });
+    };
+  };
+
+  useEffect(() => {
+    const totalPersonas = 
+      (parseInt(formData.cantidadHombres) || 0) +
+      (parseInt(formData.cantidadMujeres) || 0) +
+      (parseInt(formData.cantidadNinos) || 0);
+
+    if (totalPersonas > 0) {
+      setResultado(calcularAsado());
+    } else {
+      setResultado(null);
+    }
   }, [formData]);
 
   return (
     <div className="w-full max-w-md mx-auto">
       <form className="bg-white shadow-lg rounded-lg p-6 mb-4">
+        <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-700">
+          <div className="flex items-center">
+            <span className="mr-2">ℹ️</span>
+            <p>
+              Los resultados se actualizarán automáticamente. 
+              ¡Probá diferentes combinaciones!
+            </p>
+          </div>
+        </div>
+
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="hombres">
             Cantidad de Hombres
@@ -103,16 +126,74 @@ export default function AsadoForm() {
         </div>
       </form>
 
-      {resultado && (
-        <div className="bg-white shadow-lg rounded-lg p-6 mb-4">
-          <h2 className="text-xl font-bold mb-4">Resultados:</h2>
-          <ul className="space-y-2">
-            <li>Carne: {resultado.carne.toFixed(2)} kg</li>
-            <li>Chorizos y/o Morcillas: {resultado.embutidos} unidades</li>
-            <li>Pan: {resultado.pan.toFixed(1)} kg</li>
-          </ul>
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div className="bg-red-600 p-4">
+          <h2 className="text-xl font-bold text-white text-center">
+            {resultado ? '¡Tu Asado Calculado!' : 'Resultados'}
+          </h2>
         </div>
-      )}
+        
+        <div className="p-6 space-y-4">
+          {!resultado ? (
+            <div className="text-center p-6 text-gray-500">
+              <span className="text-4xl mb-4 block">🔥</span>
+              <p className="text-lg">
+                Agregá invitados para ver las cantidades recomendadas
+              </p>
+              <p className="text-sm mt-2 text-gray-400">
+                Los cálculos se actualizarán automáticamente
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center p-3 bg-red-50 rounded-lg border border-red-100">
+                <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <span className="text-red-600 text-xl">🥩</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-red-600 font-medium">Carne</p>
+                  <p className="text-2xl font-bold text-red-700">
+                    {resultado.carne.toFixed(2)} kg
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center p-3 bg-orange-50 rounded-lg border border-orange-100">
+                <div className="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-orange-600 text-xl">🌭</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-orange-600 font-medium">Chorizos y Morcillas</p>
+                  <p className="text-2xl font-bold text-orange-700">
+                    {resultado.embutidos} unidades
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                <div className="flex-shrink-0 w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <span className="text-yellow-600 text-xl">🍞</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-yellow-600 font-medium">Pan</p>
+                  <p className="text-2xl font-bold text-yellow-700">
+                    {resultado.pan.toFixed(1)} kg
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                <p className="flex items-center">
+                  <span className="mr-2">💡</span>
+                  Tip: {formData.alPan ? 
+                    "Calculado para asado al pan con ajuste en la cantidad de carne" : 
+                    "Calculado para asado al plato con porciones completas"}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="bg-white shadow-lg rounded-lg p-6 mb-8 text-gray-700 leading-relaxed">
         <p className="text-center">
