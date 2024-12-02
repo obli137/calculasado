@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from './providers';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: 'CalculaAsado - Calculadora de Asado',
@@ -30,6 +31,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <SpeedInsights />
         </Providers>
       </body>
     </html>
