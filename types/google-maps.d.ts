@@ -3,4 +3,10 @@ declare module '@react-google-maps/api' {
   export const LoadScript: any;
   export const Marker: any;
   export const InfoWindow: any;
+}
+
+declare global {
+  interface Window {
+    google: any;
+  }
 } 

@@ -26,7 +26,7 @@ export default function Home() {
             En definitiva, CalculaAsado es el GPS del asador, pero con olor a humo y sabor a gloria. Usalo con 
             orgullo, no solo vas a quedar como un héroe nacional, sino que encima no vas a tener que estar 
             rogándole al carnicero que te fíe otro kilo de vacío. ¡A la parrilla, compañero, que de asado 
-            sabemos todos, pero calcularlo ahora es cosa seria! 🥩🔥
+            sabemos todos, pero calcularlo ahora es cosa seria! 🔥
           </p>
         </div>
 
