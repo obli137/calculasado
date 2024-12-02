@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 import { Input, Button } from "@nextui-org/react";
 
 const mapContainerStyle = {
@@ -34,22 +34,39 @@ export default function DondeComprar() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const onPlaceChanged = useCallback(() => {
-    const autocomplete = document.querySelector('input')?.getAttribute('data-autocomplete');
-    if (autocomplete) {
-      const place = JSON.parse(autocomplete);
+  useEffect(() => {
+    if (!window.google || !inputRef.current) return;
+
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+      componentRestrictions: { country: 'ar' },
+      fields: ['geometry', 'name', 'formatted_address'],
+      types: ['address', 'establishment']
+    });
+
+    autocompleteRef.current.addListener('place_changed', () => {
+      if (!autocompleteRef.current) return;
+
+      const place = autocompleteRef.current.getPlace();
       if (place.geometry && place.geometry.location) {
         const newCenter = {
-          lat: place.geometry.location.lat,
-          lng: place.geometry.location.lng
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
         };
         setCenter(newCenter);
         setSelectedPlace(place as Place);
         setSearchQuery(place.formatted_address || '');
         searchNearbyButchers(newCenter);
       }
-    }
+    });
+
+    return () => {
+      if (autocompleteRef.current) {
+        google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
   }, []);
 
   const searchNearbyButchers = (location: { lat: number; lng: number }) => {
@@ -102,23 +119,14 @@ export default function DondeComprar() {
       >
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-grow">
-            <Autocomplete
-              onLoad={autocomplete => {
-                autocomplete.setOptions({
-                  componentRestrictions: { country: 'ar' },
-                  types: ['geocode', 'establishment']
-                });
-              }}
-              onPlaceChanged={onPlaceChanged}
-            >
-              <Input
-                type="text"
-                placeholder="Buscar ubicación..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </Autocomplete>
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder="Buscar ubicación..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
           </div>
           <div className="flex gap-2">
             <Button
