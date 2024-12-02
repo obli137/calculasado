@@ -35,41 +35,34 @@ export default function DondeComprar() {
   const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  useEffect(() => {
-    if (!window.google || !inputRef.current) return;
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+    
+    if (inputRef.current) {
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        componentRestrictions: { country: 'ar' },
+        fields: ['geometry', 'name', 'formatted_address'],
+        types: ['address', 'establishment']
+      });
 
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: 'ar' },
-      fields: ['geometry', 'name', 'formatted_address'],
-      types: ['address', 'establishment']
-    });
-
-    autocompleteRef.current.addListener('place_changed', () => {
-      if (!autocompleteRef.current) return;
-
-      const place = autocompleteRef.current.getPlace();
-      if (place.geometry && place.geometry.location) {
-        const newCenter = {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng()
-        };
-        setCenter(newCenter);
-        setSelectedPlace(place as Place);
-        setSearchQuery(place.formatted_address || '');
-        searchNearbyButchers(newCenter);
-      }
-    });
-
-    return () => {
-      if (autocompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current);
-      }
-    };
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.geometry && place.geometry.location) {
+          const newCenter = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          };
+          setCenter(newCenter);
+          setSelectedPlace(place as Place);
+          setSearchQuery(place.formatted_address || '');
+          searchNearbyButchers(newCenter);
+        }
+      });
+    }
   }, []);
 
-  const searchNearbyButchers = (location: { lat: number; lng: number }) => {
+  const searchNearbyButchers = useCallback((location: { lat: number; lng: number }) => {
     if (!map) return;
 
     const service = new google.maps.places.PlacesService(map);
@@ -85,9 +78,9 @@ export default function DondeComprar() {
         setNearbyPlaces(results as Place[]);
       }
     });
-  };
+  }, [map]);
 
-  const handleUpdateLocation = () => {
+  const handleUpdateLocation = useCallback(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -103,11 +96,7 @@ export default function DondeComprar() {
         }
       );
     }
-  };
-
-  const onMapLoad = (map: google.maps.Map) => {
-    setMap(map);
-  };
+  }, [searchNearbyButchers]);
 
   return (
     <div className="container mx-auto p-4">
@@ -119,13 +108,13 @@ export default function DondeComprar() {
       >
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-grow">
-            <Input
+            <input
               ref={inputRef}
               type="text"
               placeholder="Buscar ubicación..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
           <div className="flex gap-2">
@@ -146,7 +135,6 @@ export default function DondeComprar() {
             center={center}
             onLoad={onMapLoad}
           >
-            {/* Marcador de ubicación seleccionada */}
             {selectedPlace && (
               <Marker
                 position={{
@@ -154,13 +142,12 @@ export default function DondeComprar() {
                   lng: selectedPlace.geometry.location.lng()
                 }}
                 icon={{
-                  url: '/location-pin.png', // Puedes usar un ícono personalizado
+                  url: '/location-pin.png',
                   scaledSize: new google.maps.Size(40, 40)
                 }}
               />
             )}
             
-            {/* Marcadores de carnicerías cercanas */}
             {nearbyPlaces.map((place, index) => (
               <Marker
                 key={index}
