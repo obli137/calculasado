@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 import { Input, Button } from "@nextui-org/react";
 
@@ -25,33 +25,63 @@ interface Place {
     };
   };
   name: string;
+  vicinity?: string;
 }
 
 export default function DondeComprar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [center, setCenter] = useState(defaultCenter);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
-    autocompleteRef.current = autocomplete;
-    autocomplete.setComponentRestrictions({ country: 'ar' }); // Restringir a Argentina
-    autocomplete.setTypes(['establishment']); // Restringir a establecimientos
+  // Inicializar el autocompletado cuando el input esté disponible
+  useEffect(() => {
+    if (window.google && searchInputRef.current && !autocompleteRef.current) {
+      autocompleteRef.current = new google.maps.places.Autocomplete(searchInputRef.current, {
+        componentRestrictions: { country: 'ar' },
+        fields: ['geometry', 'name', 'formatted_address'],
+        types: ['geocode', 'establishment']
+      });
+
+      autocompleteRef.current.addListener('place_changed', onPlaceChanged);
+    }
   }, []);
 
   const onPlaceChanged = () => {
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
       if (place.geometry && place.geometry.location) {
-        setCenter({
+        const newCenter = {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng()
-        });
+        };
+        setCenter(newCenter);
         setSelectedPlace(place as Place);
         setSearchQuery(place.formatted_address || '');
+        searchNearbyButchers(newCenter);
       }
     }
+  };
+
+  const searchNearbyButchers = (location: { lat: number; lng: number }) => {
+    if (!map) return;
+
+    const service = new google.maps.places.PlacesService(map);
+    const request = {
+      location: new google.maps.LatLng(location.lat, location.lng),
+      radius: 1500, // 1.5km
+      keyword: 'carniceria',
+      type: 'store'
+    };
+
+    service.nearbySearch(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+        setNearbyPlaces(results as Place[]);
+      }
+    });
   };
 
   const handleUpdateLocation = () => {
@@ -63,12 +93,17 @@ export default function DondeComprar() {
             lng: position.coords.longitude
           };
           setCenter(newCenter);
+          searchNearbyButchers(newCenter);
         },
         (error) => {
           console.error('Error getting location:', error);
         }
       );
     }
+  };
+
+  const onMapLoad = (map: google.maps.Map) => {
+    setMap(map);
   };
 
   return (
@@ -82,14 +117,13 @@ export default function DondeComprar() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-grow">
             <Input
-              ref={inputRef}
+              ref={searchInputRef}
               type="text"
-              placeholder="Buscar carnicerías..."
+              placeholder="Buscar ubicación..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full"
             />
-            <div id="autocomplete-container" />
           </div>
           <div className="flex gap-2">
             <Button
@@ -105,18 +139,35 @@ export default function DondeComprar() {
         <div className="bg-white rounded-lg shadow-lg p-4">
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
-            zoom={13}
+            zoom={14}
             center={center}
+            onLoad={onMapLoad}
           >
+            {/* Marcador de ubicación seleccionada */}
             {selectedPlace && (
               <Marker
                 position={{
                   lat: selectedPlace.geometry.location.lat(),
                   lng: selectedPlace.geometry.location.lng()
                 }}
-                title={selectedPlace.name}
+                icon={{
+                  url: '/location-pin.png', // Puedes usar un ícono personalizado
+                  scaledSize: new google.maps.Size(40, 40)
+                }}
               />
             )}
+            
+            {/* Marcadores de carnicerías cercanas */}
+            {nearbyPlaces.map((place, index) => (
+              <Marker
+                key={index}
+                position={{
+                  lat: place.geometry.location.lat(),
+                  lng: place.geometry.location.lng()
+                }}
+                title={place.name}
+              />
+            ))}
           </GoogleMap>
         </div>
       </LoadScript>
