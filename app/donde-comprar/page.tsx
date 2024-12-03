@@ -1,338 +1,427 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
-import { Button } from "@nextui-org/react";
-
-const mapContainerStyle = {
-  width: '100%',
-  height: '70vh',
-  borderRadius: '8px'
-};
-
-const defaultCenter = {
-  lat: -34.603722,
-  lng: -58.381592
-};
-
-const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
-
-interface Place {
-  geometry: {
-    location: {
-      lat: () => number;
-      lng: () => number;
-    };
-  };
-  name: string;
-  vicinity?: string;
-}
+import React, { useCallback, useEffect, useState } from 'react';
+import { GoogleMap, useLoadScript, Marker as GoogleMapMarker, Autocomplete, InfoWindow } from '@react-google-maps/api';
 
 interface MarkerType {
-  setMap: (map: google.maps.Map | null) => void;
-  getTitle: () => string | undefined;
+    position: google.maps.LatLng | google.maps.LatLngLiteral;
+    title?: string;
+    address?: string;
+    rating?: number;
+    vicinity?: string;
+    place_id?: string;
 }
 
-export default function DondeComprar() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [center, setCenter] = useState(defaultCenter);
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-  const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [markers, setMarkers] = useState<MarkerType[]>([]);
-  const [locationIcon, setLocationIcon] = useState<any>(null);
-  const [butcherIcon, setButcherIcon] = useState<any>(null);
+const mapContainerStyle = {
+    width: '100%',
+    height: '60vh',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+};
 
-  useEffect(() => {
-    if (window.google) {
-      setLocationIcon({
-        url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-        scaledSize: new google.maps.Size(50, 50),
-        zIndex: 1000
-      });
+const center = {
+    lat: -34.397,
+    lng: 150.644,
+};
 
-      setButcherIcon({
-        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" fill="#dc2626">
-            <path d="M96 224c35.3 0 64-28.7 64-64s-28.7-64-64-64-64 28.7-64 64 28.7 64 64 64zm448 0c35.3 0 64-28.7 64-64s-28.7-64-64-64-64 28.7-64 64 28.7 64 64 64zm32 32h-64c-17.6 0-33.5 7.1-45.1 18.6 40.3 22.1 68.9 62 75.1 109.4h66c17.7 0 32-14.3 32-32v-32c0-35.3-28.7-64-64-64zm-256 0c61.9 0 112-50.1 112-112S381.9 32 320 32 208 82.1 208 144s50.1 112 112 112zm76.8 32h-8.3c-20.8 10-43.9 16-68.5 16s-47.6-6-68.5-16h-8.3C179.6 288 128 339.6 128 403.2V432c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48v-28.8c0-63.6-51.6-115.2-115.2-115.2zm-223.7-13.4C161.5 263.1 145.6 256 128 256H64c-35.3 0-64 28.7-64 64v32c0 17.7 14.3 32 32 32h65.9c6.3-47.4 34.9-87.3 75.2-109.4z"/>
-          </svg>
-        `)}`,
-        scaledSize: new google.maps.Size(35, 35),
-        anchor: new google.maps.Point(17.5, 35),
-        zIndex: 1
-      });
-    }
-  }, [map]);
+const DondeComprar: React.FC = () => {
+    const { isLoaded, loadError } = useLoadScript({
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+        libraries: ['places'],
+    });
 
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    setMap(map);
-    
-    if (inputRef.current) {
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        componentRestrictions: { country: 'ar' },
-        fields: ['geometry', 'name', 'formatted_address'],
-        types: ['address', 'establishment']
-      });
+    const [markers, setMarkers] = useState<MarkerType[]>([]);
+    const [map, setMap] = useState<google.maps.Map | null>(null);
+    const [searchBox, setSearchBox] = useState<google.maps.places.Autocomplete | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral>({
+        lat: -34.397,
+        lng: 150.644
+    });
+    const [selectedMarker, setSelectedMarker] = useState<MarkerType | null>(null);
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry && place.geometry.location) {
-          const newCenter = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          };
-          setCenter(newCenter);
-          setSelectedPlace(place as Place);
-          setSearchQuery(place.formatted_address || '');
-          searchNearbyButchers(newCenter);
+    const searchNearbyButchers = useCallback(() => {
+        if (!map) return;
+        
+        const currentCenter = map.getCenter();
+        if (!currentCenter) return;
+
+        const service = new google.maps.places.PlacesService(map);
+        const request = {
+            location: currentCenter,
+            radius: 1500,
+            keyword: 'carniceria',
+            type: 'store'
+        };
+
+        service.nearbySearch(request, (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                const newMarkers = results.map(place => ({
+                    position: {
+                        lat: place.geometry?.location?.lat() || 0,
+                        lng: place.geometry?.location?.lng() || 0
+                    },
+                    title: place.name || 'Carnicería',
+                    vicinity: place.vicinity || '',
+                    rating: place.rating,
+                    place_id: place.place_id,
+                    // Agregamos más detalles del lugar
+                    address: place.formatted_address,
+                    phone: place.formatted_phone_number,
+                    opening_hours: place.opening_hours?.weekday_text,
+                }));
+
+                // Para cada lugar, obtener detalles adicionales
+                newMarkers.forEach((marker, index) => {
+                    if (marker.place_id) {
+                        service.getDetails(
+                            {
+                                placeId: marker.place_id,
+                                fields: ['formatted_address', 'formatted_phone_number', 'opening_hours']
+                            },
+                            (place, detailStatus) => {
+                                if (detailStatus === google.maps.places.PlacesServiceStatus.OK && place) {
+                                    newMarkers[index] = {
+                                        ...newMarkers[index],
+                                        address: place.formatted_address,
+                                        phone: place.formatted_phone_number,
+                                        opening_hours: place.opening_hours?.weekday_text
+                                    };
+                                }
+                            }
+                        );
+                    }
+                });
+
+                setMarkers(newMarkers);
+            }
+        });
+    }, [map]);
+
+    const handleSearch = useCallback(() => {
+        searchNearbyButchers();
+    }, [searchNearbyButchers]);
+
+    useEffect(() => {
+        if (isLoaded) {
+            handleSearch();
         }
-      });
-    }
-  }, []);
+    }, [isLoaded, handleSearch]);
 
-  const searchNearbyButchers = useCallback((location: { lat: number; lng: number }) => {
-    if (!map) return;
-
-    const service = new google.maps.places.PlacesService(map);
-    const request = {
-      location: new google.maps.LatLng(location.lat, location.lng),
-      radius: 1500, // 1.5km
-      keyword: 'carniceria',
-      type: 'store'
+    const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+        setSearchBox(autocomplete);
     };
 
-    service.nearbySearch(request, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-        setNearbyPlaces(results as Place[]);
-      }
-    });
-  }, [map]);
-
-  const handleUpdateLocation = useCallback(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newCenter = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setCenter(newCenter);
-          searchNearbyButchers(newCenter);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-        }
-      );
-    }
-  }, [searchNearbyButchers]);
-
-  const handleLoadError = (error: Error) => {
-    console.error('Error loading Google Maps:', error);
-    setLoadError('Error al cargar Google Maps. Por favor, intenta más tarde.');
-  };
-
-  const handleLoadSuccess = () => {
-    console.log('Google Maps loaded successfully');
-    setLoadError(null);
-  };
-
-  const createMarker = useCallback((position: google.maps.LatLngLiteral, title?: string) => {
-    if (!map) return null;
-
-    const marker = new google.maps.Marker({
-      map,
-      position,
-      title,
-    });
-
-    setMarkers(prev => [...prev, marker]);
-    return marker;
-  }, [map]);
-
-  useEffect(() => {
-    if (!map || !selectedPlace) return;
-
-    // Limpiar marcadores anteriores
-    markers.forEach(marker => marker.setMap(null));
-    setMarkers([]);
-
-    // Crear marcador para la ubicación seleccionada
-    if (selectedPlace.geometry) {
-      const position = {
-        lat: selectedPlace.geometry.location.lat(),
-        lng: selectedPlace.geometry.location.lng()
-      };
-      createMarker(position, 'Ubicación seleccionada');
-    }
-  }, [map, selectedPlace, createMarker]);
-
-  useEffect(() => {
-    if (!map) return;
-
-    // Limpiar marcadores de carnicerías anteriores
-    markers.forEach(marker => {
-      if (marker.getTitle() !== 'Ubicación seleccionada') {
-        marker.setMap(null);
-      }
-    });
-    setMarkers(prev => prev.filter(marker => marker.getTitle() === 'Ubicación seleccionada'));
-
-    // Crear marcadores para las carnicerías cercanas
-    nearbyPlaces.forEach(place => {
-      const position = {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()
-      };
-      createMarker(position, place.name);
-    });
-  }, [map, nearbyPlaces, createMarker]);
-
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) return;
-
-    const geocoder = new google.maps.Geocoder();
-    
-    try {
-      const result = await geocoder.geocode({
-        address: searchQuery,
-        componentRestrictions: { country: 'AR' }
-      });
-
-      if (result.results[0]) {
-        const location = result.results[0].geometry.location;
-        const newCenter = {
-          lat: location.lat(),
-          lng: location.lng()
-        };
-        setCenter(newCenter);
-        setSelectedPlace({
-          geometry: {
-            location: {
-              lat: () => location.lat(),
-              lng: () => location.lng()
+    const onPlaceChanged = () => {
+        if (searchBox) {
+            const place = searchBox.getPlace();
+            if (place.geometry) {
+                map?.panTo(place.geometry.location);
+                map?.setZoom(15);
+                searchNearbyButchers();
             }
-          },
-          name: result.results[0].formatted_address
-        });
-        searchNearbyButchers(newCenter);
-      }
-    } catch (error) {
-      console.error('Error geocoding address:', error);
-      setLoadError('No se pudo encontrar la dirección especificada');
-    }
-  }, [searchQuery, searchNearbyButchers]);
-
-  if (loadError) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{loadError}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Encuentra Carnicerías Cercanas</h1>
-      
-      <LoadScript 
-        googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
-        libraries={libraries}
-        onLoad={handleLoadSuccess}
-        onError={handleLoadError}
-        loadingElement={
-          <div className="w-full h-[70vh] flex items-center justify-center bg-gray-100 rounded-lg">
-            <div className="text-gray-600">Cargando mapa...</div>
-          </div>
         }
-      >
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-grow">
-            <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Buscar ubicación..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-              />
-              <Button
-                color="primary"
-                variant="solid"
-                onClick={handleSearch}
-              >
-                Buscar
-              </Button>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              color="primary"
-              variant="solid"
-              onClick={handleUpdateLocation}
-            >
-              Ver Carnicerías
-            </Button>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-lg p-4">
-          <GoogleMap
-            mapContainerStyle={mapContainerStyle}
-            zoom={14}
-            center={center}
-            onLoad={onMapLoad}
-          >
-            {nearbyPlaces.map((place, index) => (
-              <Marker
-                key={index}
-                position={{
-                  lat: place.geometry.location.lat(),
-                  lng: place.geometry.location.lng()
-                }}
-                icon={butcherIcon}
-                title={place.name}
-                zIndex={1}
-              />
-            ))}
-            {selectedPlace && locationIcon && (
-              <Marker
-                position={{
-                  lat: selectedPlace.geometry.location.lat(),
-                  lng: selectedPlace.geometry.location.lng()
-                }}
-                icon={locationIcon}
-                title="Ubicación seleccionada"
-                zIndex={1000}
-              />
-            )}
-          </GoogleMap>
+    };
 
-          {/* Leyenda de marcadores */}
-          {locationIcon && butcherIcon && (
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <img src={locationIcon.url} alt="Ubicación" className="w-6 h-6" />
-                <span>Ubicación buscada</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <img src={butcherIcon.url} alt="Carnicería" className="w-6 h-6" />
-                <span>Carnicerías</span>
-              </div>
+    // Función para obtener la ubicación del usuario
+    const getUserLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    setUserLocation(pos);
+                    if (map) {
+                        map.panTo(pos);
+                        map.setZoom(15);
+                        searchNearbyButchers();
+                    }
+                },
+                (error) => {
+                    console.error('Error al obtener la ubicación:', error);
+                    alert('No se pudo obtener tu ubicación. Por favor, búscala manualmente.');
+                }
+            );
+        } else {
+            alert('Tu navegador no soporta geolocalización');
+        }
+    };
+
+    // Botón para obtener ubicación actual
+    const LocationButton = () => (
+        <button 
+            className="location-button"
+            onClick={getUserLocation}
+        >
+            <span>📍</span>
+            <span>Mi ubicación</span>
+        </button>
+    );
+
+    // Obtener ubicación al cargar el componente
+    useEffect(() => {
+        if (isLoaded) {
+            getUserLocation();
+        }
+    }, [isLoaded]);
+
+    const carniceriaIcon = {
+        url: '/logo-circular.png',
+        scaledSize: window.google?.maps?.Size ? new window.google.maps.Size(35, 35) : undefined,
+        origin: window.google?.maps?.Point ? new window.google.maps.Point(0, 0) : undefined,
+        anchor: window.google?.maps?.Point ? new window.google.maps.Point(17.5, 17.5) : undefined
+    };
+
+    const handleMarkerClick = (marker: MarkerType) => {
+        setSelectedMarker(marker);
+    };
+
+    if (loadError) return <div>Error loading maps</div>;
+    if (!isLoaded) return <div>Loading Maps</div>;
+
+    return (
+        <div className="donde-comprar-container">
+            <div className="search-container">
+                <Autocomplete
+                    onLoad={onLoad}
+                    onPlaceChanged={onPlaceChanged}
+                >
+                    <input
+                        type="text"
+                        placeholder="Ingresá tu ubicación..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="search-input"
+                    />
+                </Autocomplete>
+                <LocationButton />
+                <button 
+                    onClick={handleSearch}
+                    className="search-button"
+                >
+                    Buscar carnicerías
+                </button>
             </div>
-          )}
+            <div className="map-container">
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    zoom={15}
+                    center={userLocation}
+                    onLoad={map => setMap(map)}
+                >
+                    {/* Marcador del usuario */}
+                    <GoogleMapMarker
+                        position={userLocation}
+                        title="Tu ubicación"
+                        icon={{
+                            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                        }}
+                    />
+                    {/* Marcadores de carnicerías con InfoWindows */}
+                    {markers.map((marker, index) => (
+                        <React.Fragment key={index}>
+                            <GoogleMapMarker
+                                position={marker.position}
+                                title={marker.title}
+                                icon={carniceriaIcon}
+                                onClick={() => handleMarkerClick(marker)}
+                            />
+                            {selectedMarker === marker && (
+                                <InfoWindow
+                                    position={marker.position}
+                                    onCloseClick={() => setSelectedMarker(null)}
+                                >
+                                    <div className="info-window">
+                                        <h3>{marker.title}</h3>
+                                        {marker.vicinity && (
+                                            <p>
+                                                <strong>Dirección:</strong> {marker.vicinity}
+                                            </p>
+                                        )}
+                                        {marker.rating && (
+                                            <p>
+                                                <strong>Calificación:</strong> {marker.rating} ⭐
+                                            </p>
+                                        )}
+                                        {marker.place_id && (
+                                            <a 
+                                                href={`https://www.google.com/maps/place/?q=place_id:${marker.place_id}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="ver-mas-btn"
+                                            >
+                                                Ver en Google Maps
+                                            </a>
+                                        )}
+                                    </div>
+                                </InfoWindow>
+                            )}
+                        </React.Fragment>
+                    ))}
+                </GoogleMap>
+            </div>
         </div>
-      </LoadScript>
-    </div>
-  );
+    );
+};
+
+const styles = `
+.donde-comprar-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
+
+.search-container {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #E63946; /* Color rojo de CalculAsado */
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #1D3557; /* Color azul oscuro de CalculAsado */
+    box-shadow: 0 0 0 2px rgba(29, 53, 87, 0.1);
+}
+
+.search-button, .location-button {
+    padding: 12px 24px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+.search-button {
+    background-color: #E63946; /* Rojo de CalculAsado */
+    color: white;
+}
+
+.location-button {
+    background-color: #1D3557; /* Azul oscuro de CalculAsado */
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-button:hover {
+    background-color: #dc2f3c; /* Rojo más oscuro */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.location-button:hover {
+    background-color: #162840; /* Azul más oscuro */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-button:active,
+.location-button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Estilos para el contenedor del mapa */
+.map-container {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 2px solid #F1FAEE; /* Color claro de CalculAsado */
+}
+
+/* Estilo para hacer el marcador circular */
+.circular-marker {
+    border-radius: 50%;
+    border: 2px solid #E63946; /* Borde rojo de CalculAsado */
+    background-color: white;
+    padding: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Asegurarse de que la imagen dentro del marcador sea circular */
+.circular-marker img {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.info-window {
+    padding: 12px;
+    max-width: 300px;
+}
+
+.info-window h3 {
+    margin: 0 0 12px 0;
+    color: #E63946;
+    font-size: 18px;
+    border-bottom: 2px solid #E63946;
+    padding-bottom: 8px;
+}
+
+.info-window p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #1D3557;
+    line-height: 1.4;
+}
+
+.horarios {
+    margin: 12px 0;
+}
+
+.horarios ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+    font-size: 13px;
+}
+
+.horarios li {
+    margin: 4px 0;
+    color: #666;
+}
+
+.ver-mas-btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background-color: #E63946;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    text-align: center;
+    width: 100%;
+}
+
+.ver-mas-btn:hover {
+    background-color: #dc2f3c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+`;
+
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
+}
+
+export default DondeComprar;
