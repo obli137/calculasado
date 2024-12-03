@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { GoogleMap, LoadScript, Marker as GoogleMapMarker, InfoWindow, StandaloneSearchBox } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker as GoogleMapMarker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 
 interface MarkerType {
     position: google.maps.LatLng | google.maps.LatLngLiteral;
@@ -22,7 +22,7 @@ const mapContainerStyle = {
 const DondeCompro: React.FC = () => {
     const [markers, setMarkers] = useState<MarkerType[]>([]);
     const [map, setMap] = useState<google.maps.Map | null>(null);
-    const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
+    const [searchBox, setSearchBox] = useState<google.maps.places.Autocomplete | null>(null);
     const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
     const [selectedMarker, setSelectedMarker] = useState<MarkerType | null>(null);
     const [carniceriaIcon, setCarniceriaIcon] = useState<google.maps.Icon | null>(null);
@@ -87,26 +87,23 @@ const DondeCompro: React.FC = () => {
         });
     }, [map, userLocation]);
 
-    const onLoad = (ref: google.maps.places.SearchBox) => {
-        setSearchBox(ref);
+    const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+        setSearchBox(autocomplete);
     };
 
-    const onPlacesChanged = () => {
+    const onPlaceChanged = () => {
         if (searchBox) {
-            const places = searchBox.getPlaces();
-            if (places && places.length > 0) {
-                const place = places[0];
-                if (place.geometry && place.geometry.location) {
-                    const newLocation = {
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng()
-                    };
-                    setUserLocation(newLocation);
-                    if (map) {
-                        map.panTo(newLocation);
-                        map.setZoom(15);
-                        searchNearbyButchers();
-                    }
+            const place = searchBox.getPlace();
+            if (place.geometry && place.geometry.location) {
+                const newLocation = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng()
+                };
+                setUserLocation(newLocation);
+                if (map) {
+                    map.panTo(newLocation);
+                    map.setZoom(15);
+                    searchNearbyButchers();
                 }
             }
         }
@@ -120,16 +117,16 @@ const DondeCompro: React.FC = () => {
             >
                 <div className="search-container mb-4 flex gap-2">
                     <div className="flex-grow">
-                        <StandaloneSearchBox
+                        <Autocomplete
                             onLoad={onLoad}
-                            onPlacesChanged={onPlacesChanged}
+                            onPlaceChanged={onPlaceChanged}
                         >
                             <input
                                 type="text"
                                 placeholder="Buscar ubicación..."
                                 className="w-full p-3 border-2 border-[#E63946] rounded-lg text-lg focus:outline-none focus:border-[#1D3557] shadow-sm"
                             />
-                        </StandaloneSearchBox>
+                        </Autocomplete>
                     </div>
                     <button
                         onClick={searchNearbyButchers}
