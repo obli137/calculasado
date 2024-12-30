@@ -1,7 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+
+type CorteDeCarne = 'Tira de Asado' | 'Vacío' | 'Lomo' | 'Colita' | 'Entraña' | 'Bondiola' | 'Matambrito de cerdo' | 'Matambrito de ternera' | 'Pollo';
+
+interface FormData {
+  cantidadHombres: string;
+  cantidadMujeres: string;
+  cantidadNinos: string;
+  alPan: boolean;
+  porcentajeAchuras: number;
+  cortes: Record<CorteDeCarne, number>;
+}
 
 interface AsadoCalculation {
   carne: number;
@@ -32,7 +43,7 @@ export default function AsadoForm() {
   });
   const [resultado, setResultado] = useState<AsadoCalculation | null>(null);
 
-  const handleCorteChange = (corte: string, value: number) => {
+  const handleCorteChange = (corte: CorteDeCarne, value: number) => {
     const newCortes = { ...formData.cortes };
     newCortes[corte] = value;
     
@@ -42,7 +53,7 @@ export default function AsadoForm() {
     }
   };
 
-  const calcularAsado = () => {
+  const calcularAsado = useCallback(() => {
     const hombres = parseInt(formData.cantidadHombres) || 0;
     const mujeres = parseInt(formData.cantidadMujeres) || 0;
     const ninos = parseInt(formData.cantidadNinos) || 0;
@@ -87,22 +98,12 @@ export default function AsadoForm() {
       achuras: cantidadAchuras,
       cortes: distribucionCortes
     };
-  };
+  }, [formData]);
 
   useEffect(() => {
-    const hombres = parseInt(formData.cantidadHombres) || 0;
-    const mujeres = parseInt(formData.cantidadMujeres) || 0;
-    const ninos = parseInt(formData.cantidadNinos) || 0;
-    
-    const totalPersonas = hombres + mujeres + ninos;
-
-    if (totalPersonas > 0) {
-      const resultado = calcularAsado();
-      setResultado(resultado);
-    } else {
-      setResultado(null);
-    }
-  }, [formData.cantidadHombres, formData.cantidadMujeres, formData.cantidadNinos, formData.alPan, formData.porcentajeAchuras, formData.cortes]);
+    const resultado = calcularAsado();
+    setResultado(resultado);
+  }, [formData, calcularAsado]);
 
   return (
     <div className="w-full max-w-md mx-auto">
