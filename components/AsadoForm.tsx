@@ -8,6 +8,7 @@ interface AsadoCalculation {
   embutidos: number;
   pan: number;
   achuras: number;
+  cortes: { [key: string]: number };
 }
 
 export default function AsadoForm() {
@@ -17,8 +18,29 @@ export default function AsadoForm() {
     cantidadNinos: '',
     alPan: false,
     porcentajeAchuras: 0,
+    cortes: {
+      'Tira de Asado': 0,
+      'Vacío': 0,
+      'Lomo': 0,
+      'Colita': 0,
+      'Entraña': 0,
+      'Bondiola': 0,
+      'Matambrito de cerdo': 0,
+      'Matambrito de ternera': 0,
+      'Pollo': 0
+    }
   });
   const [resultado, setResultado] = useState<AsadoCalculation | null>(null);
+
+  const handleCorteChange = (corte: string, value: number) => {
+    const newCortes = { ...formData.cortes };
+    newCortes[corte] = value;
+    
+    const total = Object.values(newCortes).reduce((sum, val) => sum + val, 0);
+    if (total <= 100) {
+      setFormData({ ...formData, cortes: newCortes });
+    }
+  };
 
   const calcularAsado = () => {
     const hombres = parseInt(formData.cantidadHombres) || 0;
@@ -40,7 +62,8 @@ export default function AsadoForm() {
         carne: carneTotal * ajusteCarne,
         embutidos: Math.ceil(totalPersonas / 2),
         pan: totalPersonas * calculoPan,
-        achuras: 0
+        achuras: 0,
+        cortes: {}
       };
     }
 
@@ -48,11 +71,21 @@ export default function AsadoForm() {
     const cantidadAchuras = carneTotal * porcentajeAchuras * ajusteCarne;
     const cantidadCarneFinal = carneTotal * (1 - porcentajeAchuras) * ajusteCarne;
 
+    const totalPorcentajeCortes = Object.values(formData.cortes).reduce((sum, val) => sum + val, 0);
+    const distribucionCortes: { [key: string]: number } = {};
+    
+    if (totalPorcentajeCortes > 0) {
+      Object.entries(formData.cortes).forEach(([corte, porcentaje]) => {
+        distribucionCortes[corte] = (cantidadCarneFinal * (porcentaje / 100));
+      });
+    }
+
     return {
       carne: cantidadCarneFinal,
       embutidos: Math.ceil(totalPersonas / 2),
       pan: totalPersonas * calculoPan,
       achuras: cantidadAchuras,
+      cortes: distribucionCortes
     };
   };
 
@@ -69,7 +102,7 @@ export default function AsadoForm() {
     } else {
       setResultado(null);
     }
-  }, [formData.cantidadHombres, formData.cantidadMujeres, formData.cantidadNinos, formData.alPan, formData.porcentajeAchuras]);
+  }, [formData.cantidadHombres, formData.cantidadMujeres, formData.cantidadNinos, formData.alPan, formData.porcentajeAchuras, formData.cortes]);
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -177,6 +210,35 @@ export default function AsadoForm() {
             </p>
           </div>
         )}
+
+        {!formData.alPan && (
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Distribución de Cortes 🥩
+            </label>
+            <div className="space-y-3">
+              {Object.entries(formData.cortes).map(([corte, porcentaje]) => (
+                <div key={corte} className="flex items-center gap-4">
+                  <span className="text-sm text-gray-700 min-w-[150px]">{corte}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={porcentaje}
+                    onChange={(e) => handleCorteChange(corte, parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
+                  />
+                  <span className="text-sm text-gray-700 min-w-[3rem] text-right">
+                    {porcentaje}%
+                  </span>
+                </div>
+              ))}
+              <p className="text-xs text-gray-500 mt-1">
+                Total: {Object.values(formData.cortes).reduce((sum, val) => sum + val, 0)}%
+              </p>
+            </div>
+          </div>
+        )}
       </form>
 
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -257,6 +319,22 @@ export default function AsadoForm() {
                     "Calculado para asado al plato con porciones completas"}
                 </p>
               </div>
+
+              {resultado && resultado.cortes && Object.entries(resultado.cortes).map(([corte, cantidad]) => (
+                cantidad > 0 && (
+                  <div key={corte} className="flex items-center p-3 bg-red-50 rounded-lg border border-red-100">
+                    <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-xl">🥩</span>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm text-red-600 font-medium">{corte}</p>
+                      <p className="text-2xl font-bold text-red-700">
+                        {cantidad.toFixed(2)} kg
+                      </p>
+                    </div>
+                  </div>
+                )
+              ))}
             </>
           )}
         </div>
