@@ -226,7 +226,7 @@ export default function AsadoForm() {
                     min="0"
                     max="100"
                     value={porcentaje}
-                    onChange={(e) => handleCorteChange(corte, parseInt(e.target.value))}
+                    onChange={(e) => handleCorteChange(corte as CorteDeCarne, parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
                   />
                   <span className="text-sm text-gray-700 min-w-[3rem] text-right">
