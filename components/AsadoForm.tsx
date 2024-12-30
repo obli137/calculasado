@@ -20,8 +20,8 @@ interface AsadoCalculation {
   carne: number;
   embutidos: number;
   pan: number;
-  achuras: number;
-  cortes: { [key: string]: number };
+  distribucionCortes: { [key: string]: number };
+  distribucionAchuras: { [key: string]: number };
 }
 
 export default function AsadoForm() {
@@ -75,7 +75,7 @@ export default function AsadoForm() {
     }
   };
 
-  const calcularAsado = useCallback(() => {
+  const calcularAsado = useCallback((): AsadoCalculation => {
     const totalPersonas = parseInt(formData.cantidadHombres || '0') +
       parseInt(formData.cantidadMujeres || '0') +
       parseInt(formData.cantidadNinos || '0');
@@ -92,11 +92,9 @@ export default function AsadoForm() {
 
     const calculoPan = formData.alPan ? 2 : 0;
 
-    // Calcular distribución de cortes y achuras
     const distribucionCortes: { [key: string]: number } = {};
     const distribucionAchuras: { [key: string]: number } = {};
     
-    // Distribuir la cantidad total según los porcentajes
     Object.entries(formData.cortes).forEach(([corte, porcentaje]) => {
       if (porcentaje > 0) {
         distribucionCortes[corte] = (cantidadTotal * (porcentaje / 100));
