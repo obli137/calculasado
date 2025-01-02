@@ -1,110 +1,117 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const isActive = (path: string) => {
-    return pathname === path ? 'text-red-600' : 'text-gray-600 hover:text-red-600';
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
     <nav className="bg-white shadow-lg">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link 
-              href="/" 
-              className="flex items-center space-x-2"
-            >
-              <Image
-                src="/logo.png"
-                alt="CalculaAsado Logo"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <span className="text-lg font-bold text-red-600">CalculaAsado</span>
-            </Link>
-          </div>
-
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-600 hover:text-red-600 focus:outline-none"
-              aria-label="Toggle menu"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-between">
+          <div className="flex space-x-7">
+            <div>
+              <Link href="/" className="flex items-center py-4">
+                <span className="font-semibold text-gray-500 text-lg">🔥 Calculasado</span>
+              </Link>
+            </div>
+            <div className="hidden md:flex items-center space-x-1">
+              <Link
+                href="/"
+                className={`py-4 px-2 ${
+                  pathname === '/' ? 'text-red-500 border-b-4 border-red-500' : 'text-gray-500 hover:text-red-500 transition duration-300'
+                }`}
               >
-                {isMenuOpen ? (
-                  <path d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
+                Calculadora
+              </Link>
+              <Link
+                href="/precios"
+                className={`py-4 px-2 ${
+                  pathname === '/precios' ? 'text-red-500 border-b-4 border-red-500' : 'text-gray-500 hover:text-red-500 transition duration-300'
+                }`}
+              >
+                Precios
+              </Link>
+              {user && (
+                <Link
+                  href="/mis-compras"
+                  className={`py-4 px-2 ${
+                    pathname === '/mis-compras' ? 'text-red-500 border-b-4 border-red-500' : 'text-gray-500 hover:text-red-500 transition duration-300'
+                  }`}
+                >
+                  Mis Compras
+                </Link>
+              )}
+            </div>
+          </div>
+          
+          {/* Sección de autenticación */}
+          <div className="hidden md:flex items-center space-x-3">
+            {loading ? (
+              <span className="text-gray-500">Cargando...</span>
+            ) : user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-gray-500">{user.email}</span>
+                <button
+                  onClick={handleLogout}
+                  className="py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className={`py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                  pathname === '/login' ? 'bg-red-700' : ''
+                }`}
+              >
+                Iniciar sesión
+              </Link>
+            )}
           </div>
 
-          <div className="hidden md:flex space-x-8 items-center">
-            <Link 
-              href="/" 
-              className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${isActive('/')}`}
-            >
-              Calculadora
-            </Link>
-            <Link 
-              href="/donde-comprar" 
-              className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${isActive('/donde-comprar')}`}
-            >
-              Dónde Comprar
-            </Link>
-            <Link 
-              href="/cafecito" 
-              className={`inline-flex items-center px-1 pt-1 text-sm font-medium ${isActive('/cafecito')}`}
-            >
-              Invitar Cafecito
-            </Link>
-          </div>
-        </div>
-
-        <div
-          className={`${
-            isMenuOpen ? 'block' : 'hidden'
-          } md:hidden pb-4 transition-all duration-300 ease-in-out`}
-        >
-          <div className="flex flex-col space-y-2">
-            <Link
-              href="/"
-              className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/')}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Calculadora
-            </Link>
-            <Link
-              href="/donde-comprar"
-              className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/donde-comprar')}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dónde Comprar
-            </Link>
-            <Link
-              href="/cafecito"
-              className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/cafecito')}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Invitar Cafecito
-            </Link>
+          {/* Menú móvil */}
+          <div className="md:hidden flex items-center">
+            {!loading && (user ? (
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleLogout}
+                  className="py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500"
+                >
+                  Salir
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500"
+              >
+                Entrar
+              </Link>
+            ))}
           </div>
         </div>
       </div>
