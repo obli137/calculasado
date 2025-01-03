@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -74,34 +74,7 @@ export default function ResumenOrden({ orden }: OrdenProps) {
     return () => subscription.unsubscribe()
   }, [])
 
-  useEffect(() => {
-    const fetchPrecios = async () => {
-      const { data, error } = await supabase
-        .from('tipos_carnes')
-        .select('id, nombre, precio_kg, categoria')
-
-      if (error) {
-        console.error('Error cargando precios:', error)
-        return
-      }
-
-      // Convertir el array de tipos de carne a un objeto para fácil acceso
-      const preciosMap = data.reduce((acc, item: TipoCarne) => {
-        acc[item.nombre] = {
-          id: item.id,
-          precio: item.precio_kg
-        }
-        return acc
-      }, {} as Precios)
-
-      setPrecios(preciosMap)
-      calcularTotal(preciosMap)
-    }
-
-    fetchPrecios()
-  }, [orden])
-
-  const calcularTotal = (preciosActuales: Precios) => {
+  const calcularTotal = useCallback((preciosActuales: Precios) => {
     let subtotal = 0;
 
     // Calcular subtotal de cortes
@@ -131,7 +104,33 @@ export default function ResumenOrden({ orden }: OrdenProps) {
 
     setTotal(subtotal);
     setLoading(false);
-  };
+  }, [orden]);
+
+  useEffect(() => {
+    const fetchPrecios = async () => {
+      const { data, error } = await supabase
+        .from('tipos_carnes')
+        .select('id, nombre, precio_kg, categoria')
+
+      if (error) {
+        console.error('Error cargando precios:', error)
+        return
+      }
+
+      const preciosMap = data.reduce((acc, item: TipoCarne) => {
+        acc[item.nombre] = {
+          id: item.id,
+          precio: item.precio_kg
+        }
+        return acc
+      }, {} as Precios)
+
+      setPrecios(preciosMap)
+      calcularTotal(preciosMap)
+    }
+
+    fetchPrecios()
+  }, [calcularTotal]);
 
   const handleDireccionChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
