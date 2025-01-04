@@ -87,13 +87,14 @@ export default function AsadoForm() {
     }
   };
 
-  const handleEmbutidoChange = (tipo: 'chorizo' | 'morcilla', value: number) => {
+  const handleEmbutidosChange = (tipo: 'chorizo' | 'morcilla', value: number) => {
     const otroTipo = tipo === 'chorizo' ? 'morcilla' : 'chorizo';
+    
     setFormData({
       ...formData,
       distribucionEmbutidos: {
-        [tipo]: value,
-        [otroTipo]: 100 - value
+        chorizo: tipo === 'chorizo' ? value : 100 - value,
+        morcilla: tipo === 'morcilla' ? value : 100 - value
       }
     });
   };
@@ -345,16 +346,7 @@ export default function AsadoForm() {
                 min="0"
                 max="100"
                 value={formData.distribucionEmbutidos.chorizo}
-                onChange={(e) => {
-                  const chorizoValue = parseInt(e.target.value);
-                  setFormData({
-                    ...formData,
-                    distribucionEmbutidos: {
-                      chorizo: chorizoValue,
-                      morcilla: 100 - chorizoValue
-                    }
-                  });
-                }}
+                onChange={(e) => handleEmbutidosChange('chorizo', parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-yellow-600"
               />
               <span className="text-sm text-gray-700 min-w-[3rem] text-right">
