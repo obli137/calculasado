@@ -1,39 +1,29 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { Providers } from './providers';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Inter } from 'next/font/google'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
+import './globals.css'
 
-export const metadata: Metadata = {
-  title: 'CalculaAsado - Calculadora de Asado',
-  description: 'Calcula exactamente cuánta carne necesitas para tu asado. ¡No más sobras ni faltantes!',
-};
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata = {
+  title: 'CalculAsado',
+  description: 'Calculadora de asado',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="es">
-      <head>
-        <link 
-          rel="icon" 
-          href="/favicon.ico" 
-          sizes="any"
-        />
-      </head>
-      <body className="min-h-screen flex flex-col bg-gray-50">
-        <Providers>
-          <Navbar />
-          <main className="flex-grow">
-            {children}
-          </main>
-          <Footer />
-          <SpeedInsights />
-        </Providers>
+      <body className={`${inter.className} flex flex-col min-h-screen`}>
+        <Navbar />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
-  );
+  )
 }

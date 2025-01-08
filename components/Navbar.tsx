@@ -1,120 +1,108 @@
 'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import Image from 'next/image'
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null)
+  const pathname = usePathname()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+      setUser(session?.user || null)
+    })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+      setUser(session?.user || null)
+    })
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
-    <nav className="bg-white shadow-lg">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between">
-          <div className="flex space-x-7">
-            <div>
-              <Link href="/" className="flex items-center py-4">
-                <span className="font-semibold text-gray-500 text-lg">🔥 Calculasado</span>
-              </Link>
-            </div>
-            <div className="hidden md:flex items-center space-x-1">
+    <nav className="bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center space-x-8">
+            <Link href="/" className="flex items-center">
+              <div className="rounded-full overflow-hidden w-10 h-10">
+                <Image
+                  src="/logo.png"
+                  alt="CalculAsado Logo"
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              </div>
+              <span className="text-red-600 font-bold text-xl ml-2">CalculAsado</span>
+            </Link>
+            
+            <div className="hidden md:flex space-x-4">
               <Link
                 href="/"
-                className={`py-4 px-2 ${
-                  pathname === '/' ? 'text-red-500 border-b-4 border-red-500' : 'text-gray-500 hover:text-red-500 transition duration-300'
+                className={`px-3 py-2 rounded-md ${
+                  pathname === '/' 
+                    ? 'bg-red-600 text-white' 
+                    : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
                 }`}
               >
                 Calculadora
               </Link>
               <Link
                 href="/precios"
-                className={`py-4 px-2 ${
-                  pathname === '/precios' ? 'text-red-500 border-b-4 border-red-500' : 'text-gray-500 hover:text-red-500 transition duration-300'
+                className={`px-3 py-2 rounded-md ${
+                  pathname === '/precios' 
+                    ? 'bg-red-600 text-white' 
+                    : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
                 }`}
               >
                 Precios
               </Link>
-              {user && (
-                <Link
-                  href="/mis-compras"
-                  className={`py-4 px-2 ${
-                    pathname === '/mis-compras' ? 'text-red-500 border-b-4 border-red-500' : 'text-gray-500 hover:text-red-500 transition duration-300'
-                  }`}
-                >
-                  Mis Compras
-                </Link>
-              )}
-            </div>
-          </div>
-          
-          {/* Sección de autenticación */}
-          <div className="hidden md:flex items-center space-x-3">
-            {loading ? (
-              <span className="text-gray-500">Cargando...</span>
-            ) : user ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-500">{user.email}</span>
-                <button
-                  onClick={handleLogout}
-                  className="py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  Cerrar sesión
-                </button>
-              </div>
-            ) : (
               <Link
-                href="/login"
-                className={`py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                  pathname === '/login' ? 'bg-red-700' : ''
+                href="/mis-compras"
+                className={`px-3 py-2 rounded-md ${
+                  pathname === '/mis-compras' 
+                    ? 'bg-red-600 text-white' 
+                    : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
                 }`}
               >
-                Iniciar sesión
+                Mis Compras
               </Link>
-            )}
+            </div>
           </div>
 
-          {/* Menú móvil */}
-          <div className="md:hidden flex items-center">
-            {!loading && (user ? (
-              <div className="flex items-center space-x-3">
+          <div className="flex items-center">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-600">{user.email}</span>
                 <button
-                  onClick={handleLogout}
-                  className="py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500"
+                  onClick={() => supabase.auth.signOut()}
+                  className="text-gray-600 hover:text-red-600"
                 >
-                  Salir
+                  Cerrar Sesión
                 </button>
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500"
-              >
-                Entrar
-              </Link>
-            ))}
+              <div className="space-x-4">
+                <Link
+                  href="/login"
+                  className="text-gray-600 hover:text-red-600"
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/registro"
+                  className="bg-red-600 text-white px-3 py-2 rounded-md hover:bg-red-700"
+                >
+                  Registrarse
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </nav>
-  );
+  )
 }

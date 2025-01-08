@@ -42,8 +42,8 @@ interface DireccionEnvio {
 
 export default function ResumenOrden({ orden }: OrdenProps) {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
   const [precios, setPrecios] = useState<Precios>({})
-  const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [user, setUser] = useState<any>(null)
   const [costoEnvio] = useState(1500) // Costo fijo de envío, podría ser variable según la zona
@@ -141,81 +141,88 @@ export default function ResumenOrden({ orden }: OrdenProps) {
   }
 
   const handleSubmit = async () => {
-    if (!user) {
-      alert('Debes iniciar sesión para confirmar la compra')
-      return
-    }
-
     try {
-      // 1. Insertar el pedido principal
+      setLoading(true)
+      
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Debes iniciar sesión para realizar un pedido')
+      }
+
+      console.log('Creando pedido...')
+
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
-        .insert({
-          user_id: user.id,
-          estado: 'PENDIENTE',
-          direccion_entrega: `${direccion.calle} ${direccion.numero}`,
-          ciudad: direccion.ciudad,
-          codigo_postal: direccion.codigoPostal,
-          telefono: direccion.telefono,
-          metodo_pago: direccion.metodoPago,
-          subtotal: total,
-          costo_envio: costoEnvio,
-          total: total + costoEnvio,
-          notas: direccion.notas,
-          fecha_entrega: new Date(direccion.fechaEntrega).toISOString()
-        })
+        .insert([
+          {
+            user_id: session.user.id,
+            total: total,
+            estado: 'PENDIENTE',
+            fecha_entrega: orden.fechaEntrega || null,
+            metodo_pago: orden.metodoPago || 'efectivo',
+            costo_envio: orden.costoEnvio || 0
+          }
+        ])
         .select()
         .single()
 
-      if (pedidoError) throw pedidoError
+      if (pedidoError) {
+        console.error('Error al crear pedido:', pedidoError)
+        throw pedidoError
+      }
 
-      // 2. Insertar los items del pedido con los IDs correctos
+      console.log('Pedido creado:', pedido)
+
       const items = [
         // Items de cortes
-        ...Object.entries(orden.distribucionCortes).map(([nombre, cantidad]) => ({
+        ...Object.entries(orden.distribucionCortes).map(([corte, kg]) => ({
           pedido_id: pedido.id,
-          tipo_carne_id: precios[nombre]?.id,
-          cantidad_kg: cantidad,
-          precio_unitario: precios[nombre]?.precio || 0,
-          subtotal: (precios[nombre]?.precio || 0) * cantidad
+          tipo_carne_id: precios[corte]?.id,
+          cantidad: kg,
+          subtotal: (precios[corte]?.precio || 0) * kg
         })),
         // Items de achuras
-        ...Object.entries(orden.distribucionAchuras).map(([nombre, cantidad]) => ({
+        ...Object.entries(orden.distribucionAchuras).map(([achura, kg]) => ({
           pedido_id: pedido.id,
-          tipo_carne_id: precios[nombre]?.id,
-          cantidad_kg: cantidad,
-          precio_unitario: precios[nombre]?.precio || 0,
-          subtotal: (precios[nombre]?.precio || 0) * cantidad
+          tipo_carne_id: precios[achura]?.id,
+          cantidad: kg,
+          subtotal: (precios[achura]?.precio || 0) * kg
         })),
-        // Embutidos
-        {
+        // Items de embutidos
+        ...(orden.distribucionEmbutidos.chorizo > 0 ? [{
           pedido_id: pedido.id,
           tipo_carne_id: precios['Chorizo']?.id,
-          cantidad_kg: orden.distribucionEmbutidos.chorizo,
-          precio_unitario: precios['Chorizo']?.precio || 0,
+          cantidad: orden.distribucionEmbutidos.chorizo,
           subtotal: (precios['Chorizo']?.precio || 0) * orden.distribucionEmbutidos.chorizo
-        },
-        {
+        }] : []),
+        ...(orden.distribucionEmbutidos.morcilla > 0 ? [{
           pedido_id: pedido.id,
           tipo_carne_id: precios['Morcilla']?.id,
-          cantidad_kg: orden.distribucionEmbutidos.morcilla,
-          precio_unitario: precios['Morcilla']?.precio || 0,
+          cantidad: orden.distribucionEmbutidos.morcilla,
           subtotal: (precios['Morcilla']?.precio || 0) * orden.distribucionEmbutidos.morcilla
-        }
+        }] : [])
       ]
+
+      console.log('Creando items...', items)
 
       const { error: itemsError } = await supabase
         .from('pedidos_items')
         .insert(items)
 
-      if (itemsError) throw itemsError
+      if (itemsError) {
+        console.error('Error al crear items:', itemsError)
+        throw itemsError
+      }
 
-      // Redireccionar a página de confirmación
-      router.push(`/pedido-confirmado/${pedido.id}`)
+      console.log('Items creados exitosamente')
 
-    } catch (error) {
-      console.error('Error al procesar el pedido:', error)
-      alert('Hubo un error al procesar tu pedido. Por favor, intenta nuevamente.')
+      router.push(`/gracias?pedido=${pedido.id}`)
+
+    } catch (error: any) {
+      console.error('Error detallado:', error)
+      alert(`Error al procesar el pedido: ${error.message || 'Error desconocido'}`)
+    } finally {
+      setLoading(false)
     }
   }
 
