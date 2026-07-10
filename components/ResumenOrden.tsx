@@ -2,6 +2,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { validarCodigoPostal } from '@/utils/codigosPostales'
+import { addDays, format } from 'date-fns'
 
 interface TipoCarne {
   id: string
@@ -19,8 +21,10 @@ interface Precios {
 
 interface OrdenProps {
   orden: {
-    distribucionCortes: { [key: string]: number }
-    distribucionAchuras: { [key: string]: number }
+    carne?: number
+    alPan?: boolean
+    distribucionCortes?: { [key: string]: number }
+    distribucionAchuras?: { [key: string]: number }
     distribucionEmbutidos: {
       chorizo: number
       morcilla: number
@@ -57,8 +61,20 @@ export default function ResumenOrden({ orden }: OrdenProps) {
     metodoPago: 'EFECTIVO',
     fechaEntrega: ''
   })
+  const [codigoPostal, setCodigoPostal] = useState('')
+  const [codigoPostalError, setCodigoPostalError] = useState<string | null>(null)
+  const [fechaEntrega, setFechaEntrega] = useState<string>('')
+  const [turnoEntrega, setTurnoEntrega] = useState<string>('')
 
   const KG_POR_EMBUTIDO = 0.15; // Constante para el peso de cada embutido
+
+  // Calculamos la fecha mínima (2 días después de hoy)
+  const fechaMinima = format(addDays(new Date(), 2), 'yyyy-MM-dd')
+
+  const turnos = [
+    { id: 'manana', label: 'Turno Mañana (8:00 - 14:00)' },
+    { id: 'tarde', label: 'Turno Tarde (17:00 - 21:00)' }
+  ]
 
   useEffect(() => {
     // Verificar si el usuario está autenticado
@@ -77,14 +93,14 @@ export default function ResumenOrden({ orden }: OrdenProps) {
   const calcularTotal = useCallback((preciosActuales: Precios) => {
     let subtotal = 0;
 
-    // Calcular subtotal de cortes
-    Object.entries(orden.distribucionCortes).forEach(([corte, kg]) => {
+    // Calcular subtotal de cortes (pedidos anteriores con distribución)
+    Object.entries(orden.distribucionCortes || {}).forEach(([corte, kg]) => {
       const precioUnitario = preciosActuales[corte]?.precio || 0;
       subtotal += precioUnitario * kg;
     });
 
-    // Calcular subtotal de achuras
-    Object.entries(orden.distribucionAchuras).forEach(([achura, kg]) => {
+    // Calcular subtotal de achuras (pedidos anteriores con distribución)
+    Object.entries(orden.distribucionAchuras || {}).forEach(([achura, kg]) => {
       const precioUnitario = preciosActuales[achura]?.precio || 0;
       subtotal += precioUnitario * kg;
     });
@@ -140,16 +156,37 @@ export default function ResumenOrden({ orden }: OrdenProps) {
     }))
   }
 
+  const validarEnvio = () => {
+    const cp = parseInt(codigoPostal)
+    if (isNaN(cp)) {
+      setCodigoPostalError('Por favor, ingresa un código postal válido')
+      return false
+    }
+
+    if (!validarCodigoPostal(cp)) {
+      setCodigoPostalError('Lo sentimos, de momento no realizamos envíos a tu zona. Solo hacemos envíos en Capital Federal y GBA Norte.')
+      return false
+    }
+
+    setCodigoPostalError(null)
+    return true
+  }
+
   const handleSubmit = async () => {
+    if (!fechaEntrega || !turnoEntrega) {
+      alert('Por favor selecciona una fecha y turno de entrega')
+      return
+    }
+    if (!validarEnvio()) {
+      return
+    }
+
     try {
       setLoading(true)
-      
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         throw new Error('Debes iniciar sesión para realizar un pedido')
       }
-
-      console.log('Creando pedido...')
 
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
@@ -158,9 +195,11 @@ export default function ResumenOrden({ orden }: OrdenProps) {
             user_id: session.user.id,
             total: total,
             estado: 'PENDIENTE',
-            fecha_entrega: orden.fechaEntrega || null,
+            fecha_entrega: fechaEntrega,
+            horario_entrega: turnoEntrega,
             metodo_pago: orden.metodoPago || 'efectivo',
-            costo_envio: orden.costoEnvio || 0
+            costo_envio: orden.costoEnvio || 0,
+            codigo_postal: codigoPostal
           }
         ])
         .select()
@@ -174,15 +213,15 @@ export default function ResumenOrden({ orden }: OrdenProps) {
       console.log('Pedido creado:', pedido)
 
       const items = [
-        // Items de cortes
-        ...Object.entries(orden.distribucionCortes).map(([corte, kg]) => ({
+        // Items de cortes (pedidos anteriores con distribución)
+        ...Object.entries(orden.distribucionCortes || {}).map(([corte, kg]) => ({
           pedido_id: pedido.id,
           tipo_carne_id: precios[corte]?.id,
           cantidad: kg,
           subtotal: (precios[corte]?.precio || 0) * kg
         })),
-        // Items de achuras
-        ...Object.entries(orden.distribucionAchuras).map(([achura, kg]) => ({
+        // Items de achuras (pedidos anteriores con distribución)
+        ...Object.entries(orden.distribucionAchuras || {}).map(([achura, kg]) => ({
           pedido_id: pedido.id,
           tipo_carne_id: precios[achura]?.id,
           cantidad: kg,
@@ -236,14 +275,33 @@ export default function ResumenOrden({ orden }: OrdenProps) {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Resumen de tu Pedido</h1>
+      <h1 className="text-2xl font-bold mb-2">Resumen de tu Pedido</h1>
+      <p className="text-sm text-gray-600 mb-6">Envíos a CABA y GBA Norte</p>
       
-      {/* Cortes de Carne */}
-      {Object.entries(orden.distribucionCortes).length > 0 && (
+      {/* Total de carne (pedido simplificado) */}
+      {orden.carne && orden.carne > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3 text-red-700">Carne</h2>
+          <div className="bg-white shadow rounded-lg p-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="font-medium">Total de carne</span>
+                <span className="text-sm text-gray-500 ml-2">
+                  ({orden.carne.toFixed(2)} kg{orden.alPan ? ' — al pan' : ' — al plato'})
+                </span>
+              </div>
+              <span className="text-sm text-gray-500 italic">Precio a confirmar</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cortes de Carne (pedidos anteriores con distribución) */}
+      {Object.entries(orden.distribucionCortes || {}).length > 0 && (
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-3 text-red-700">Cortes de Carne</h2>
           <div className="bg-white shadow rounded-lg p-4 space-y-2">
-            {Object.entries(orden.distribucionCortes).map(([corte, kg]) => {
+            {Object.entries(orden.distribucionCortes || {}).map(([corte, kg]) => {
               const precioUnitario = precios[corte]?.precio || 0;
               const subtotal = precioUnitario * kg;
               return (
@@ -265,11 +323,11 @@ export default function ResumenOrden({ orden }: OrdenProps) {
       )}
 
       {/* Achuras */}
-      {Object.entries(orden.distribucionAchuras).length > 0 && (
+      {Object.entries(orden.distribucionAchuras || {}).length > 0 && (
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-3 text-orange-700">Achuras</h2>
           <div className="bg-white shadow rounded-lg p-4 space-y-2">
-            {Object.entries(orden.distribucionAchuras).map(([achura, kg]) => {
+            {Object.entries(orden.distribucionAchuras || {}).map(([achura, kg]) => {
               const precioUnitario = precios[achura]?.precio || 0;
               const subtotal = precioUnitario * kg;
               return (
@@ -325,12 +383,128 @@ export default function ResumenOrden({ orden }: OrdenProps) {
         </div>
       )}
 
-      {/* Total */}
-      <div className="bg-gray-50 rounded-lg p-4 mt-6">
-        <div className="flex justify-between items-center text-xl font-bold">
-          <span>Total</span>
-          <span>${total.toFixed(2)}</span>
+      {/* Sección única de datos de envío */}
+      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
+        <h2 className="text-lg font-semibold mb-4">Datos de envío</h2>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Calle *
+              </label>
+              <input
+                type="text"
+                value={direccion.calle}
+                onChange={(e) => setDireccion(prev => ({ ...prev, calle: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Número *
+              </label>
+              <input
+                type="text"
+                value={direccion.numero}
+                onChange={(e) => setDireccion(prev => ({ ...prev, numero: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ciudad *
+              </label>
+              <input
+                type="text"
+                value={direccion.ciudad}
+                onChange={(e) => setDireccion(prev => ({ ...prev, ciudad: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Código Postal *
+              </label>
+              <input
+                type="text"
+                value={direccion.codigoPostal}
+                onChange={(e) => {
+                  setCodigoPostal(e.target.value)
+                  setCodigoPostalError(null)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                required
+              />
+              {codigoPostalError && (
+                <p className="mt-2 text-sm text-red-600">
+                  {codigoPostalError}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de entrega *
+              </label>
+              <input
+                type="date"
+                min={fechaMinima}
+                value={direccion.fechaEntrega}
+                onChange={(e) => setDireccion(prev => ({ ...prev, fechaEntrega: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Turno de entrega *
+              </label>
+              <select
+                value={direccion.turnoEntrega}
+                onChange={(e) => setDireccion(prev => ({ ...prev, turnoEntrega: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                required
+              >
+                <option value="">Selecciona un turno</option>
+                {turnos.map(turno => (
+                  <option key={turno.id} value={turno.id}>
+                    {turno.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Nota sobre el precio */}
+      <div className="mt-4 mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <p className="text-sm text-yellow-700 italic">
+          * El importe final podrá variar levemente según el peso final de las piezas.
+        </p>
+      </div>
+
+      {/* Total y botón de confirmar */}
+      <div className="mt-6 text-right">
+        <div className="text-2xl font-bold mb-4">
+          Total: ${total.toFixed(2)}
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !!codigoPostalError || !fechaEntrega || !turnoEntrega}
+          className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 disabled:bg-gray-400"
+        >
+          {loading ? 'Procesando...' : 'Confirmar Pedido'}
+        </button>
       </div>
 
       {/* Formulario de dirección */}
@@ -466,13 +640,6 @@ export default function ResumenOrden({ orden }: OrdenProps) {
               </div>
             </div>
           </div>
-
-          <button
-            onClick={handleSubmit}
-            className="w-full mt-6 bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200"
-          >
-            Confirmar Pedido
-          </button>
         </div>
       ) : (
         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
