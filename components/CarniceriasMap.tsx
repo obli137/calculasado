@@ -56,7 +56,7 @@ export default function CarniceriasMap() {
   const [details, setDetails] = useState<DetailExtras | null>(null)
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [geoStatus, setGeoStatus] = useState<'pending' | 'ok' | 'denied'>('pending')
-  const [statusMsg, setStatusMsg] = useState('Buscando carnicerías...')
+  const [statusMsg, setStatusMsg] = useState('Rastreando proveedores de gloria...')
 
   const mapRef = useRef<google.maps.Map | null>(null)
   const lastSearchCenter = useRef<google.maps.LatLngLiteral | null>(null)
@@ -82,7 +82,7 @@ export default function CarniceriasMap() {
 
     lastSearchCenter.current = location
     setLoadingSearch(true)
-    setStatusMsg('Buscando carnicerías...')
+    setStatusMsg('Rastreando proveedores de gloria...')
 
     service.nearbySearch(
       {
@@ -97,7 +97,7 @@ export default function CarniceriasMap() {
         if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.length) {
           setCarnicerias([])
           setSelected(null)
-          setStatusMsg('No encontramos carnicerías cerca. Probá otra zona.')
+          setStatusMsg('En esta zona no hay carni. Hay desolación y delivery.')
           return
         }
 
@@ -115,7 +115,9 @@ export default function CarniceriasMap() {
           }))
 
         setCarnicerias(mapped)
-        setStatusMsg(`${mapped.length} carnicería${mapped.length === 1 ? '' : 's'} en la zona`)
+        setStatusMsg(
+          `${mapped.length} posible${mapped.length === 1 ? '' : 's'} proveedor${mapped.length === 1 ? '' : 'es'} de felicidad`
+        )
       }
     )
   }, [])
@@ -248,11 +250,11 @@ export default function CarniceriasMap() {
   }
 
   if (loadError) {
-    return <MapSkeleton message="No se pudo cargar Google Maps. Revisá la API key." />
+    return <MapSkeleton message="El mapa se negó a aparecer. Revisá la API key." />
   }
 
   if (!isLoaded) {
-    return <MapSkeleton message="Cargando mapa..." />
+    return <MapSkeleton message="Rastreando proveedores de gloria..." />
   }
 
   return (
@@ -287,7 +289,7 @@ export default function CarniceriasMap() {
 
       <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
         <p>
-          {loadingSearch ? 'Buscando...' : statusMsg}
+          {loadingSearch ? 'Rastreando...' : statusMsg}
           {geoStatus === 'denied' && (
             <span className="ml-1 text-gray-400">
               (ubicación no disponible — arrastrá el mapa o buscá una dirección)
@@ -360,7 +362,11 @@ export default function CarniceriasMap() {
       </div>
 
       {carnicerias.length > 0 && (
-        <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div>
+          <h2 className="mb-2 text-lg font-semibold text-gray-900">
+            Candidatos a salvar el domingo
+          </h2>
+          <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white">
           {carnicerias.slice(0, 8).map((c) => (
             <li key={c.placeId}>
               <button
@@ -381,7 +387,8 @@ export default function CarniceriasMap() {
               </button>
             </li>
           ))}
-        </ul>
+          </ul>
+        </div>
       )}
     </div>
   )
