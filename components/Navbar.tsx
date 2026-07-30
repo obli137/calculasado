@@ -35,6 +35,16 @@ export default function Navbar() {
               >
                 Calculadora
               </Link>
+              <Link
+                href="/carnicerias"
+                className={`px-3 py-2 rounded-md ${
+                  pathname === '/carnicerias' 
+                    ? 'bg-red-600 text-white' 
+                    : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
+                }`}
+              >
+                Carnicerías
+              </Link>
             </div>
           </div>
         </div>

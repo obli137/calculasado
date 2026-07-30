@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface FormData {
   cantidadHombres: string;
@@ -15,15 +15,6 @@ interface AsadoCalculation {
   pan: number;
 }
 
-const VEGAN_MESSAGES = [
-  'Soy vegano 🌱',
-  '¿En serio? 😏',
-  'Acá no, che',
-  'Fuera de la parrilla',
-  '¡Ni en pedo!',
-  'Buscá ensalada 🥗',
-];
-
 export default function AsadoForm() {
   const [formData, setFormData] = useState<FormData>({
     cantidadHombres: '',
@@ -32,9 +23,15 @@ export default function AsadoForm() {
     alPan: false,
   });
   const [resultado, setResultado] = useState<AsadoCalculation | null>(null);
-  const [veganPos, setVeganPos] = useState({ x: 0, y: 0 });
-  const [veganLabel, setVeganLabel] = useState(VEGAN_MESSAGES[0]);
-  const veganAreaRef = useRef<HTMLDivElement>(null);
+  const [veganOffsetY, setVeganOffsetY] = useState(0);
+  const veganNextDir = useRef<'down' | 'up'>('down');
+  const veganResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (veganResetTimer.current) clearTimeout(veganResetTimer.current);
+    };
+  }, []);
 
   const getTotalPersonas = () =>
     parseInt(formData.cantidadHombres || '0') +
@@ -78,24 +75,20 @@ export default function AsadoForm() {
   };
 
   const huirVegano = () => {
-    const area = veganAreaRef.current;
-    if (!area) {
-      setVeganPos({
-        x: Math.random() * 200 - 100,
-        y: Math.random() * 80 - 40,
-      });
+    if (veganResetTimer.current) clearTimeout(veganResetTimer.current);
+
+    if (veganNextDir.current === 'down') {
+      setVeganOffsetY(28);
+      veganNextDir.current = 'up';
     } else {
-      const maxX = Math.max(area.clientWidth - 160, 40);
-      const maxY = Math.max(area.clientHeight - 48, 20);
-      setVeganPos({
-        x: Math.random() * maxX,
-        y: Math.random() * maxY,
-      });
+      setVeganOffsetY(-28);
+      veganNextDir.current = 'down';
     }
 
-    setVeganLabel(
-      VEGAN_MESSAGES[Math.floor(Math.random() * VEGAN_MESSAGES.length)]
-    );
+    veganResetTimer.current = setTimeout(() => {
+      setVeganOffsetY(0);
+      veganNextDir.current = 'down';
+    }, 700);
   };
 
   const totalPersonas = getTotalPersonas();
@@ -211,32 +204,24 @@ export default function AsadoForm() {
           Calcular asado 🔥
         </button>
 
-        <div
-          ref={veganAreaRef}
-          className="relative mt-6 h-24 overflow-hidden rounded-lg border border-dashed border-gray-200 bg-gray-50"
-        >
-          <button
-            type="button"
-            onMouseEnter={huirVegano}
-            onFocus={huirVegano}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              huirVegano();
-            }}
-            onClick={(e) => e.preventDefault()}
-            style={{
-              position: 'absolute',
-              left: veganPos.x,
-              top: veganPos.y,
-            }}
-            className="whitespace-nowrap rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 shadow-sm transition-all duration-150 hover:bg-green-100"
-          >
-            {veganLabel}
-          </button>
+        <div className="relative mt-4 h-28 overflow-hidden">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-0">
+            <button
+              type="button"
+              onMouseEnter={huirVegano}
+              onFocus={huirVegano}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                huirVegano();
+              }}
+              onClick={(e) => e.preventDefault()}
+              style={{ transform: `translateY(${veganOffsetY}px)` }}
+              className="w-full rounded-lg border border-green-300 bg-green-50 py-3 text-base font-medium text-green-700 shadow-sm transition-transform duration-200 ease-out"
+            >
+              Soy vegano 🌱
+            </button>
+          </div>
         </div>
-        <p className="mt-2 text-center text-xs text-gray-400">
-          Si sos vegano, intentá apretar el botón de arriba
-        </p>
       </form>
 
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
