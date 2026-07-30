@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface FormData {
   cantidadHombres: string;
@@ -15,6 +15,15 @@ interface AsadoCalculation {
   pan: number;
 }
 
+const VEGAN_MESSAGES = [
+  'Soy vegano 🌱',
+  '¿En serio? 😏',
+  'Acá no, che',
+  'Fuera de la parrilla',
+  '¡Ni en pedo!',
+  'Buscá ensalada 🥗',
+];
+
 export default function AsadoForm() {
   const [formData, setFormData] = useState<FormData>({
     cantidadHombres: '',
@@ -23,11 +32,19 @@ export default function AsadoForm() {
     alPan: false,
   });
   const [resultado, setResultado] = useState<AsadoCalculation | null>(null);
+  const [veganPos, setVeganPos] = useState({ x: 0, y: 0 });
+  const [veganLabel, setVeganLabel] = useState(VEGAN_MESSAGES[0]);
+  const veganAreaRef = useRef<HTMLDivElement>(null);
 
   const getTotalPersonas = () =>
     parseInt(formData.cantidadHombres || '0') +
     parseInt(formData.cantidadMujeres || '0') +
     parseInt(formData.cantidadNinos || '0');
+
+  const updateFormData = (updates: Partial<FormData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
+    setResultado(null);
+  };
 
   const calcularAsado = useCallback((): AsadoCalculation => {
     const totalPersonas =
@@ -35,15 +52,10 @@ export default function AsadoForm() {
       parseInt(formData.cantidadMujeres || '0') +
       parseInt(formData.cantidadNinos || '0');
 
-    const calculoBase = (hombres: number, mujeres: number, ninos: number) => {
-      return (hombres * 0.5) + (mujeres * 0.4) + (ninos * 0.2);
-    };
-
-    let cantidadTotal = calculoBase(
-      parseInt(formData.cantidadHombres || '0'),
-      parseInt(formData.cantidadMujeres || '0'),
-      parseInt(formData.cantidadNinos || '0')
-    );
+    let cantidadTotal =
+      parseInt(formData.cantidadHombres || '0') * 0.5 +
+      parseInt(formData.cantidadMujeres || '0') * 0.4 +
+      parseInt(formData.cantidadNinos || '0') * 0.2;
 
     if (formData.alPan) {
       cantidadTotal = cantidadTotal * 0.7;
@@ -59,10 +71,32 @@ export default function AsadoForm() {
     };
   }, [formData]);
 
-  useEffect(() => {
-    const resultado = calcularAsado();
-    setResultado(resultado);
-  }, [formData, calcularAsado]);
+  const handleCalcular = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (getTotalPersonas() === 0) return;
+    setResultado(calcularAsado());
+  };
+
+  const huirVegano = () => {
+    const area = veganAreaRef.current;
+    if (!area) {
+      setVeganPos({
+        x: Math.random() * 200 - 100,
+        y: Math.random() * 80 - 40,
+      });
+    } else {
+      const maxX = Math.max(area.clientWidth - 160, 40);
+      const maxY = Math.max(area.clientHeight - 48, 20);
+      setVeganPos({
+        x: Math.random() * maxX,
+        y: Math.random() * maxY,
+      });
+    }
+
+    setVeganLabel(
+      VEGAN_MESSAGES[Math.floor(Math.random() * VEGAN_MESSAGES.length)]
+    );
+  };
 
   const totalPersonas = getTotalPersonas();
 
@@ -100,13 +134,12 @@ export default function AsadoForm() {
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Calculadora de Asado</h1>
       
-      <form className="bg-white shadow-lg rounded-lg p-6 mb-4">
+      <form onSubmit={handleCalcular} className="bg-white shadow-lg rounded-lg p-6 mb-4">
         <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-700">
           <div className="flex items-center">
             <span className="mr-2">ℹ️</span>
             <p>
-              Los resultados se actualizarán automáticamente. 
-              ¡Probá diferentes combinaciones!
+              Completá los invitados y apretá <strong>Calcular asado</strong> para ver las cantidades.
             </p>
           </div>
         </div>
@@ -121,7 +154,7 @@ export default function AsadoForm() {
             type="number"
             min="0"
             value={formData.cantidadHombres}
-            onChange={(e) => setFormData({...formData, cantidadHombres: e.target.value})}
+            onChange={(e) => updateFormData({ cantidadHombres: e.target.value })}
             placeholder="Número de hombres"
           />
         </div>
@@ -136,7 +169,7 @@ export default function AsadoForm() {
             type="number"
             min="0"
             value={formData.cantidadMujeres}
-            onChange={(e) => setFormData({...formData, cantidadMujeres: e.target.value})}
+            onChange={(e) => updateFormData({ cantidadMujeres: e.target.value })}
             placeholder="Número de mujeres"
           />
         </div>
@@ -151,24 +184,59 @@ export default function AsadoForm() {
             type="number"
             min="0"
             value={formData.cantidadNinos}
-            onChange={(e) => setFormData({...formData, cantidadNinos: e.target.value})}
+            onChange={(e) => updateFormData({ cantidadNinos: e.target.value })}
             placeholder="Número de niños"
           />
         </div>
 
-        <div className="mb-4 flex items-center">
+        <div className="mb-6 flex items-center">
           <span className="text-sm font-medium text-gray-700 mr-3">Al Plato</span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input 
               type="checkbox"
               checked={formData.alPan}
-              onChange={(e) => setFormData({ ...formData, alPan: e.target.checked })}
+              onChange={(e) => updateFormData({ alPan: e.target.checked })}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
           </label>
           <span className="text-sm font-medium text-gray-700 ml-3">Al Pan</span>
         </div>
+
+        <button
+          type="submit"
+          disabled={totalPersonas === 0}
+          className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          Calcular asado 🔥
+        </button>
+
+        <div
+          ref={veganAreaRef}
+          className="relative mt-6 h-24 overflow-hidden rounded-lg border border-dashed border-gray-200 bg-gray-50"
+        >
+          <button
+            type="button"
+            onMouseEnter={huirVegano}
+            onFocus={huirVegano}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              huirVegano();
+            }}
+            onClick={(e) => e.preventDefault()}
+            style={{
+              position: 'absolute',
+              left: veganPos.x,
+              top: veganPos.y,
+            }}
+            className="whitespace-nowrap rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 shadow-sm transition-all duration-150 hover:bg-green-100"
+          >
+            {veganLabel}
+          </button>
+        </div>
+        <p className="mt-2 text-center text-xs text-gray-400">
+          Si sos vegano, intentá apretar el botón de arriba
+        </p>
       </form>
 
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -179,14 +247,14 @@ export default function AsadoForm() {
         </div>
         
         <div className="p-6 space-y-4">
-          {!resultado || totalPersonas === 0 ? (
+          {!resultado ? (
             <div className="text-center p-6 text-gray-500">
               <span className="text-4xl mb-4 block">🔥</span>
               <p className="text-lg">
-                Agregá invitados para ver las cantidades recomendadas
+                Agregá invitados y apretá Calcular asado
               </p>
               <p className="text-sm mt-2 text-gray-400">
-                Los cálculos se actualizarán automáticamente
+                El resultado aparece solo cuando lo pedís
               </p>
             </div>
           ) : (
