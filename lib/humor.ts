@@ -134,32 +134,3 @@ export const CHECKLIST_ASADO = [
   { id: 'fuego', label: 'Encendedor / fósforos (no confiar en el del auto)' },
   { id: 'pan', label: 'Pan, si es al pan — obvio, pero se olvida' },
 ]
-
-export function sugerenciasSobras(kg: number): string[] {
-  if (kg <= 0) return ['No sobró. O se lo llevaron, o fue un cálculo honesto.']
-  if (kg < 0.3) {
-    return [
-      'Sobró casi nada: un sándwich de la madrugada o negación total.',
-      'Opción B: se lo come el que apaga la luz.',
-    ]
-  }
-  if (kg < 1) {
-    return [
-      'Empanadas del lunes. Clásico. Respetable.',
-      'Sanguches para el trabajo. El asado sigue trabajando.',
-      'Negación: “no sobró nada” mientras lo escondés en el freezer.',
-    ]
-  }
-  if (kg < 2.5) {
-    return [
-      'Guiso. El destino natural de toda gloria parrillera.',
-      'Empanadas en cantidad. Convocá refuerzos.',
-      'Tacos improvisados. La frontera es un estado mental.',
-    ]
-  }
-  return [
-    'Esto ya no es sobra: es un segundo asado disfrazado.',
-    'Guiso industrial. O donación estratégica a vecinos.',
-    'Negación absoluta no alcanza. Aceptá el destino: freezer y plan B.',
-  ]
-}
