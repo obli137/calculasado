@@ -38,6 +38,22 @@ export const GUIAS: GuiaMeta[] = [
     metaDescription:
       'Manejo del fuego y el carbón en el asado: brasas vs fuego vivo, cuándo poner la carne y tips para no convertir la parrilla en pira.',
   },
+  {
+    slug: 'checklist-previa-al-asado',
+    titulo: 'Checklist previa al asado',
+    descripcion:
+      'Lista tachable antes del fuego: carne, carbón, sal y lo que siempre se olvida.',
+    metaDescription:
+      'Checklist práctica previa al asado: carne, carbón, sal gruesa, chimichurri y lo que siempre se olvida. Tachá antes de prender.',
+  },
+  {
+    slug: 'diccionario-parrillero',
+    titulo: 'Diccionario parrillero',
+    descripcion:
+      'Vacío, a punto, cuñado y otros términos que todos usan y nadie define bien.',
+    metaDescription:
+      'Diccionario parrillero argentino: qué significa vacío, a punto, jugoso, cuñado y más. Definiciones honestas, con humor seco.',
+  },
 ]
 
 export function getGuia(slug: string) {

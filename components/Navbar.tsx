@@ -9,8 +9,6 @@ const links = [
   { href: '/', label: 'Calculadora' },
   { href: '/guias', label: 'Guías' },
   { href: '/carnicerias', label: 'Carni-radar' },
-  { href: '/checklist', label: 'Checklist' },
-  { href: '/diccionario', label: 'Diccionario' },
   { href: '/sobras', label: 'CalculaSobras' },
 ]
 
@@ -44,8 +42,8 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex h-14 items-center justify-between md:h-16">
+      <div className="mx-auto max-w-5xl px-4">
+        <div className="flex h-14 items-center justify-between gap-6 md:h-16 md:justify-start">
           <Link href="/" className="flex items-center shrink-0" onClick={() => setOpen(false)}>
             <div className="h-10 w-10 overflow-hidden rounded-full">
               <Image
@@ -60,7 +58,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1 md:flex md:ml-2 lg:ml-4">
             {links.map((link) => {
               const active = linkIsActive(pathname, link.href)
               return (

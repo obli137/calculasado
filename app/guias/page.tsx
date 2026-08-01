@@ -4,7 +4,7 @@ import { GUIAS } from '@/lib/guias'
 export const metadata = {
   title: 'Guías del Asador | CalculAsado',
   description:
-    'Consejos prácticos para no fallarle al fuego ni a los invitados: primer asado, errores comunes, cortes y manejo del carbón.',
+    'Consejos prácticos para no fallarle al fuego ni a los invitados: primer asado, errores comunes, cortes, checklist y diccionario parrillero.',
 }
 
 export default function GuiasPage() {
@@ -35,12 +35,12 @@ export default function GuiasPage() {
           hacer las cuentas
         </Link>
         , mirar el{' '}
-        <Link href="/diccionario" className="text-red-600 hover:underline">
-          diccionario parrillero
+        <Link href="/carnicerias" className="text-red-600 hover:underline">
+          Carni-radar
         </Link>{' '}
-        o armar la{' '}
-        <Link href="/checklist" className="text-red-600 hover:underline">
-          checklist
+        o resolver las{' '}
+        <Link href="/sobras" className="text-red-600 hover:underline">
+          sobras
         </Link>
         .
       </p>

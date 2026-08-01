@@ -39,7 +39,7 @@ export default function CarniceriasPage() {
         </Link>
         <p className="mt-3 text-sm text-gray-600">
           O mirá la{' '}
-          <Link href="/checklist" className="text-red-600 hover:underline">
+          <Link href="/guias/checklist-previa-al-asado" className="text-red-600 hover:underline">
             checklist previa
           </Link>
           {' · '}

@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 const RECURSOS = [
   {
-    href: '/checklist',
+    href: '/guias/checklist-previa-al-asado',
     titulo: 'Checklist previa',
     copy: 'Antes del fuego, tachá. Después, no hay vuelta atrás.',
   },
@@ -12,7 +12,7 @@ const RECURSOS = [
     copy: 'Si sobró, no fue un error: fue inventario. Calculá el destino.',
   },
   {
-    href: '/diccionario',
+    href: '/guias/diccionario-parrillero',
     titulo: 'Diccionario parrillero',
     copy: 'Para entender qué dicen cuando dicen “está a punto”.',
   },

@@ -41,7 +41,10 @@ export default function GuiaArticle({ children, titulo, slug }: Props) {
             Calculá las cantidades
           </Link>
           {' · '}
-          <Link href="/checklist" className="font-medium text-red-600 hover:underline">
+          <Link
+            href="/guias/checklist-previa-al-asado"
+            className="font-medium text-red-600 hover:underline"
+          >
             Checklist previa
           </Link>
         </p>
