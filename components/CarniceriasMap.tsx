@@ -35,8 +35,8 @@ type DetailExtras = {
 
 function MapSkeleton({ message }: { message: string }) {
   return (
-    <div className="flex h-[60vh] items-center justify-center rounded-lg bg-gray-100 text-gray-600">
-      <p>{message}</p>
+    <div className="flex h-[45vh] items-center justify-center rounded-lg bg-gray-100 text-gray-600 sm:h-[60vh]">
+      <p className="px-4 text-center">{message}</p>
     </div>
   )
 }
@@ -97,7 +97,9 @@ export default function CarniceriasMap() {
         if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.length) {
           setCarnicerias([])
           setSelected(null)
-          setStatusMsg('En esta zona no hay carni. Hay desolación y delivery.')
+          setStatusMsg(
+            'En esta zona no hay carni. Hay desolación y delivery. Probá mover el mapa un par de cuadras.'
+          )
           return
         }
 
@@ -274,34 +276,34 @@ export default function CarniceriasMap() {
             <input
               type="text"
               placeholder="Buscar otra dirección o barrio..."
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-800 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-800 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
             />
           </Autocomplete>
         </div>
         <button
           type="button"
           onClick={goToMyLocation}
-          className="shrink-0 rounded-lg bg-red-600 px-4 py-2.5 font-medium text-white hover:bg-red-700"
+          className="min-h-12 shrink-0 rounded-lg bg-red-600 px-4 py-3 font-medium text-white hover:bg-red-700"
         >
           Mi ubicación
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
+      <div className="space-y-1 text-sm text-gray-600">
         <p>
           {loadingSearch ? 'Rastreando...' : statusMsg}
-          {geoStatus === 'denied' && (
-            <span className="ml-1 text-gray-400">
-              (ubicación no disponible — arrastrá el mapa o buscá una dirección)
-            </span>
-          )}
         </p>
-        <p className="hidden text-xs text-gray-400 sm:block">
+        {geoStatus === 'denied' && (
+          <p className="text-gray-400">
+            Ubicación no disponible — arrastrá el mapa o buscá una dirección.
+          </p>
+        )}
+        <p className="text-xs text-gray-500">
           Arrastrá el mapa para cambiar de zona
         </p>
       </div>
 
-      <div className="h-[60vh] overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+      <div className="h-[45vh] overflow-hidden rounded-lg border border-gray-200 shadow-sm sm:h-[60vh]">
         <GoogleMap
           mapContainerStyle={MAP_CONTAINER_STYLE}
           center={center}
@@ -344,22 +346,40 @@ export default function CarniceriasMap() {
                 <p className="text-gray-600">
                   {details?.address || selected.vicinity || 'Cargando dirección...'}
                 </p>
-                {details?.phone && <p>{details.phone}</p>}
-                {details?.mapsUrl && (
-                  <a
-                    href={details.mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block text-red-600 underline"
-                  >
-                    Ver en Google Maps
-                  </a>
-                )}
               </div>
             </InfoWindow>
           )}
         </GoogleMap>
       </div>
+
+      {selected && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="font-semibold text-gray-900">{selected.name}</p>
+          <p className="mt-1 text-sm text-gray-600">
+            {details?.address || selected.vicinity || 'Cargando dirección...'}
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            {details?.phone && (
+              <a
+                href={`tel:${details.phone.replace(/\s+/g, '')}`}
+                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-center font-medium text-gray-800 hover:bg-gray-50"
+              >
+                Llamar
+              </a>
+            )}
+            {details?.mapsUrl && (
+              <a
+                href={details.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-lg bg-red-600 px-4 py-2.5 text-center font-medium text-white hover:bg-red-700"
+              >
+                Cómo llegar
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {carnicerias.length > 0 && (
         <div>
@@ -375,7 +395,7 @@ export default function CarniceriasMap() {
                   mapRef.current?.panTo(c.position)
                   openMarker(c)
                 }}
-                className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-red-50"
+                className="flex min-h-14 w-full items-start justify-between gap-3 px-4 py-3.5 text-left hover:bg-red-50"
               >
                 <div>
                   <p className="font-medium text-gray-900">{c.name}</p>

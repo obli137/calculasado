@@ -1,8 +1,10 @@
+import Link from 'next/link'
 import { DICCIONARIO_PARRILLERO } from '@/lib/humor'
 
 export const metadata = {
-  title: 'Diccionario parrillero | CalculAsado',
-  description: 'Definiciones honestas del asado argentino',
+  title: 'Diccionario parrillero argentino | CalculAsado',
+  description:
+    'Qué significa vacío, a punto, jugoso, cuñado y otros términos del asado. Definiciones honestas, con humor seco y utilidad real.',
 }
 
 export default function DiccionarioPage() {
@@ -24,6 +26,21 @@ export default function DiccionarioPage() {
           </div>
         ))}
       </dl>
+
+      <p className="mt-10 text-center text-sm text-gray-500">
+        Con el léxico claro,{' '}
+        <Link href="/" className="text-red-600 hover:underline">
+          calculá el asado
+        </Link>
+        {' · '}
+        <Link href="/guias" className="text-red-600 hover:underline">
+          leé las guías
+        </Link>
+        {' · '}
+        <Link href="/carnicerias" className="text-red-600 hover:underline">
+          buscá carni
+        </Link>
+      </p>
     </div>
   )
 }

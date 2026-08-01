@@ -125,12 +125,14 @@ export const DICCIONARIO_PARRILLERO = [
 ]
 
 export const CHECKLIST_ASADO = [
-  { id: 'carbon', label: 'Carbón (o leña, si te hacés el interesante)' },
-  { id: 'sal', label: 'Sal gruesa' },
-  { id: 'vino', label: 'Vino (o la bebida que diga la tradición familiar)' },
-  { id: 'paciencia', label: 'Paciencia' },
-  { id: 'lava', label: 'Alguien que lave después' },
-  { id: 'tabla', label: 'Tabla y cuchillo que corten de verdad' },
-  { id: 'fuego', label: 'Encendedor / fósforos (no confiar en el del auto)' },
-  { id: 'pan', label: 'Pan, si es al pan — obvio, pero se olvida' },
+  { id: 'carne', label: 'Carne comprada (y no “ya veo en el camino”)' },
+  { id: 'carbon', label: 'Carbón suficiente (el que “alcanza” nunca alcanza)' },
+  { id: 'sal', label: 'Sal gruesa — no la fina del salero de la cocina' },
+  { id: 'chimichurri', label: 'Chimichurri (casero o comprado: nadie va a pedir la receta)' },
+  { id: 'tablas', label: 'Tablas limpias para cortar y servir' },
+  { id: 'cuchillo', label: 'Cuchillo bien afilado (el romo es una provocación)' },
+  { id: 'bebidas', label: 'Bebidas: vino, agua y lo que diga la tradición familiar' },
+  { id: 'ensalada', label: 'Ensalada o algo verde (para la foto y para la conciencia)' },
+  { id: 'aluminio', label: 'Papel aluminio (el héroe silencioso del asado)' },
+  { id: 'paciencia', label: 'Paciencia — y alguien que lave después' },
 ]

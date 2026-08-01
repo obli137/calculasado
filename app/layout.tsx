@@ -11,6 +11,13 @@ export const metadata = {
   description: 'Calculadora de asado',
 }
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+  themeColor: '#dc2626',
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -18,11 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${inter.className} flex flex-col min-h-screen`}>
+      <body className={`${inter.className} flex min-h-screen flex-col`}>
         <Navbar />
-        <main className="flex-grow">
-          {children}
-        </main>
+        <main className="flex-grow">{children}</main>
         <Footer />
         <Analytics />
       </body>

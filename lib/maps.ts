@@ -19,6 +19,7 @@ export const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
   fullscreenControl: true,
   clickableIcons: false,
+  gestureHandling: 'greedy',
 }
 
 export const SEARCH_RADIUS_METERS = 2000
