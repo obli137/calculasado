@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { useEffect, useId, useState } from 'react'
+import { usePwa } from '@/components/PwaInstall'
 
 const links = [
   { href: '/', label: 'Calculadora' },
@@ -21,6 +22,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const menuId = useId()
+  const { isMobile, installed, openHelp } = usePwa()
 
   useEffect(() => {
     setOpen(false)
@@ -57,7 +59,6 @@ export default function Navbar() {
             <span className="ml-2 text-xl font-bold text-red-600">CalculaAsado</span>
           </Link>
 
-          {/* Desktop */}
           <div className="hidden items-center gap-1 md:flex md:ml-2 lg:ml-4">
             {links.map((link) => {
               const active = linkIsActive(pathname, link.href)
@@ -77,7 +78,6 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Mobile hamburger */}
           <button
             type="button"
             className="inline-flex h-11 w-11 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 md:hidden"
@@ -99,7 +99,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile panel */}
       {open && (
         <>
           <button
@@ -134,6 +133,20 @@ export default function Navbar() {
                   </li>
                 )
               })}
+              {isMobile && !installed && (
+                <li>
+                  <button
+                    type="button"
+                    className="block min-h-12 w-full rounded-md px-4 py-3 text-left text-base font-medium text-red-700 hover:bg-red-50"
+                    onClick={() => {
+                      setOpen(false)
+                      openHelp()
+                    }}
+                  >
+                    Dejar en el celu
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </>

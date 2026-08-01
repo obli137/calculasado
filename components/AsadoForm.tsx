@@ -10,6 +10,7 @@ import {
   pickRandom,
 } from '@/lib/humor';
 import MasRecursos from '@/components/MasRecursos';
+import { AddToHomeCard } from '@/components/PwaInstall';
 
 interface FormData {
   cantidadHombres: string;
@@ -397,6 +398,8 @@ export default function AsadoForm() {
               </svg>
               Avisar por WhatsApp
             </button>
+
+            <AddToHomeCard />
 
             <MasRecursos />
           </div>
